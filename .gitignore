@@ -1,0 +1,10 @@
+# macOS Files
+*.DS_Store
+*.ipynb_checkpoints
+*.pyc
+*.h5
+.idea
+__pycache__
+
+# ignore ALL files in ANY directory
+/.idea
