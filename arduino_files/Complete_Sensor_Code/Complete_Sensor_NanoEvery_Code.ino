@@ -6,6 +6,7 @@ The data is then sent to the computer via Serial. The data is then read by Pytho
 This code is for the Arduino Nano Every
 *********************************************************************************************/
 
+
 /* Libraries  */
 // ---------------------------------------------------------------
 #include <MPU6050_2.h>      // Include the library for MPU6050 sensor 2
@@ -14,6 +15,7 @@ This code is for the Arduino Nano Every
 #include <Wire.h>           // Include the Wire library for I2C communication
 #include <SPI.h>            // Include the SPI library for SPI communication
 // ---------------------------------------------------------------
+
 
 /* Initializing Libraries */
 // ---------------------------------------------------------------
@@ -26,9 +28,10 @@ MPU6050 mpu6050_1(Wire);
 MPU60502 mpu6050_2(Wire); 
 // ---------------------------------------------------------------
 
+
 /* Constants declaration, and pins declaration */
 // ---------------------------------------------------------------
-const int SERIAL_BAUD_RATE = 38400; // Serial baud rate
+const int SERIAL_BAUD_RATE = 31250; // Serial baud rate
 
 // SPI pins, digital pins
 const int MISO_PIN = 12;  // MISO Pin 12, was 50 on MEGA
@@ -48,6 +51,7 @@ const int FORCE_3_PIN = 16; // A2
 const int FORCE_4_PIN = 17; // A3
 // ---------------------------------------------------------------
 
+
 /* Variables declaration */ 
 // ---------------------------------------------------------------
  // timer for MPU6050
@@ -57,6 +61,7 @@ long timer = millis();
 long prevTimeSinceStart = millis(); 
 
 // Sensor variables
+float force = 0;
 float force_1 = 0;
 float force_2 = 0;
 float force_3 = 0;
@@ -105,7 +110,31 @@ float prev_R_PMW_X = 0;
 float prev_R_PMW_Y = 0;
 float prev_R_PMW_X_vel = 0;
 float prev_R_PMW_Y_vel = 0;
+float globalCalibrationValue = 0;
 // ---------------------------------------------------------------
+
+
+void calibrateForceSensors() {
+  const int calibrationReadings = 1000; // Adjust the number of readings as needed
+  float calibrationSum = 0;
+
+  for (int i = 0; i < calibrationReadings; i++) {
+    // Read the force sensor values and accumulate them
+    calibrationSum += analogRead(FORCE_1_PIN);
+    calibrationSum += analogRead(FORCE_2_PIN); 
+    calibrationSum += analogRead(FORCE_3_PIN);
+    calibrationSum += analogRead(FORCE_4_PIN); 
+    delay(1); // Adjust the delay between readings as needed
+  }
+
+  // Calculate the average value
+  float calibrationValue = (calibrationSum / 4) / calibrationReadings;
+
+  // Store the calibration value as the reference point
+  // You may need to store it in a global variable or adjust your code accordingly
+  // For example: globalCalibrationValue = calibrationValue;
+}
+
 
 void setup() {
   Serial.begin(SERIAL_BAUD_RATE); // Initialize Serial
@@ -122,7 +151,6 @@ void setup() {
 
   /* PMW3389 portion */
   // -------------------------------------------------------------
-  Initialize SPI
   SPI.begin();                  // Initialize SPI bus
   SPI.setDataMode(SPI_MODE0);   // CPOL = 0, CPHA = 0
   SPI.setBitOrder(MSBFIRST);    // MSB first
@@ -139,7 +167,12 @@ void setup() {
   sensor2.begin(SS_PIN_2, 16000); // second argument to the begin function
   // -------------------------------------------------------------
 
+  /* Force sensor portion */
+  // -------------------------------------------------------------
+  calibrateForceSensors(); // Calibrate the force sensors
+  // -------------------------------------------------------------
 }
+
 
 void loop() {
   unsigned long currentMillis = millis(); // current time for MPU6050 in milliseconds
@@ -267,10 +300,11 @@ void loop() {
 
     /* Force sensors read at Pin A0, A1, A2, A3 */
     // -------------------------------------------------------------
-    force_1 = (analogRead(FORCE_1_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
-    force_2 = (analogRead(FORCE_2_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
-    force_3 = (analogRead(FORCE_3_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
-    force_4 = (analogRead(FORCE_4_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
+    force_1 = (analogRead(FORCE_1_PIN) - globalCalibrationValue) * 0.011; // 0.011 is the conversion factor 
+    force_2 = (analogRead(FORCE_2_PIN) - globalCalibrationValue) * 0.011; // globalCalibrationValue is the calibration value
+    force_3 = (analogRead(FORCE_3_PIN) - globalCalibrationValue) * 0.011; 
+    force_4 = (analogRead(FORCE_4_PIN) - globalCalibrationValue) * 0.011;
+    force = (force_1 + force_2 + force_3 + force_4) / 4; // average of all 4 force sensors
     // -------------------------------------------------------------
 
     /* Trial and error */
