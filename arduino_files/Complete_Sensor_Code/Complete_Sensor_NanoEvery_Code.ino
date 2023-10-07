@@ -124,11 +124,12 @@ void calibrateForceSensors() {
     calibrationSum += analogRead(FORCE_2_PIN); 
     calibrationSum += analogRead(FORCE_3_PIN);
     calibrationSum += analogRead(FORCE_4_PIN); 
-    delay(1); // Adjust the delay between readings as needed
+    delay(10); // Adjust the delay between readings as needed
   }
 
   // Calculate the average value
   float calibrationValue = (calibrationSum / 4) / calibrationReadings;
+  globalCalibrationValue = calibrationValue; 
 
   // Store the calibration value as the reference point
   // You may need to store it in a global variable or adjust your code accordingly
