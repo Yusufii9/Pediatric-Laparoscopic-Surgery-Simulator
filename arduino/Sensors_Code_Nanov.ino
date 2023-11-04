@@ -1,60 +1,56 @@
 /*********************************************************************************************
-Author: Atallah Madi 
+Author: Atallah Madi
 Date: October 26th, 2023
 Purpose: This code is used to read data from the MPU6050, PMW3389, and Force sensors.
 The data is then sent to the computer via Serial. The data is then read by Python Application
 This code is for the Arduino Nano.
 *********************************************************************************************/
 
-
 /* Libraries  */
 // ---------------------------------------------------------------
-#include <MPU6050_2.h>      // Include the library for MPU6050 sensor 2
-#include <MPU6050_1.h>      // Include the library for MPU6050 sensor 1
-#include <PMW3389.h>        // Include the library for PMW3389 sensor
-#include <Wire.h>           // Include the Wire library for I2C communication
-#include <SPI.h>            // Include the SPI library for SPI communication
-#include <HX711.h>          // Include the HX711 library for force sensors
+#include <MPU6050_2.h> // Include the library for MPU6050 sensor 2
+#include <MPU6050_1.h> // Include the library for MPU6050 sensor 1
+#include <PMW3389.h>   // Include the library for PMW3389 sensor
+#include <Wire.h>      // Include the Wire library for I2C communication
+#include <SPI.h>       // Include the SPI library for SPI communication
+#include <HX711.h>     // Include the HX711 library for force sensors
 // ---------------------------------------------------------------
-
 
 /* Initializing Libraries */
 // ---------------------------------------------------------------
-PMW3389 sensor1; 
+HX711 scale1;
+HX711 scale2;
+PMW3389 sensor1;
 PMW3389 sensor2;
-HX711 forceSensor1;
-HX711 forceSensor2;
-MPU6050 mpu6050_1(Wire); 
-MPU60502 mpu6050_2(Wire); 
+MPU6050 mpu6050_1(Wire);
+MPU60502 mpu6050_2(Wire);
 // ---------------------------------------------------------------
-
 
 /* Constants declaration, and pins declaration */
 // ---------------------------------------------------------------
-const int SERIAL_BAUD_RATE = 31250; 
+const int SERIAL_BAUD_RATE = 31250;
 
 // SPI pins, digital pins
-const int MISO_PIN = 12;  // D12
-const int MOSI_PIN = 11;  // D11
-const int SCK_PIN = 13;   // D13
-const int SS_PIN_1 = 8;   // D8
-const int SS_PIN_2 = 7;   // D7
+const int MISO_PIN = 12; // D12
+const int MOSI_PIN = 11; // D11
+const int SCK_PIN = 13;  // D13
+const int SS_PIN_1 = 8;  // D8
+const int SS_PIN_2 = 7;  // D7
 
 // I2C pins, digital pins
-const int SDA_PIN = 18;   // A4
-const int SCL_PIN = 19;   // A5
+const int SDA_PIN = 18; // A4
+const int SCL_PIN = 19; // A5
 
 // Force sensor pins, analog pins
-const int DFORCE_CLK_PIN = 14; // A0
+const int DFORCE_CLK_PIN = 14;  // A0
 const int DFORCE_DATA_PIN = 15; // A1
-const int UFORCE_CLK_PIN = 16; // A2
+const int UFORCE_CLK_PIN = 16;  // A2
 const int UFORCE_DATA_PIN = 17; // A3
 // ---------------------------------------------------------------
 
-
-/* Variables declaration */ 
+/* Variables declaration */
 // ---------------------------------------------------------------
-long timer = millis();   // timer for MPU6050
+long timer = millis();              // timer for MPU6050
 long prevTimeSinceStart = millis(); // timer for PMW3389
 
 // Sensor variables
@@ -114,10 +110,10 @@ float prev_R_PMW_X_vel = 0;
 float prev_R_PMW_Y_vel = 0;
 // ---------------------------------------------------------------
 
-
 /* Intializing Sensors */
 // -------------------------------------------------------------
-void setup() {
+void setup()
+{
   Serial.begin(SERIAL_BAUD_RATE);
   Wire.begin();
 
@@ -126,14 +122,15 @@ void setup() {
   mpu6050_1.calcGyroOffsets(true);
   mpu6050_2.begin();
   mpu6050_2.calcGyroOffsets(true);
-  
-  while (!Serial); // Wait for serial to initialize.
+
+  while (!Serial)
+    ; // Wait for serial to initialize.
 
   // PMW3389 portion
   /*
   NOT IN THE OLD CODE !!!
   SPI.begin();                  // Initialize SPI bus
-  SPI.setDataMode(SPI_MODE0);   // CPOL = 0, CPHA = 0 
+  SPI.setDataMode(SPI_MODE0);   // CPOL = 0, CPHA = 0
   SPI.setBitOrder(MSBFIRST);    // MSB first
   SPI.setClockDivider(SPI_CLOCK_DIV16); // Adjust the clock divider as needed
 
@@ -149,14 +146,12 @@ void setup() {
   sensor2.begin(SS_PIN_2, 16000); // second argument to the begin function
 
   // Force sensor portion
-  forceSensor1.begin(DFORCE_DATA_PIN, DFORCE_CLK_PIN);
-  forceSensor2.begin(UFORCE_DATA_PIN, UFORCE_CLK_PIN);
+  scale1.begin(DFORCE_DATA_PIN, DFORCE_CLK_PIN);
+  scale2.begin(UFORCE_DATA_PIN, UFORCE_CLK_PIN);
 
-  forceSensor1.tare();
-  forceSensor2.tare();
-
+  scale1.tare();
+  scale2.tare();
 }
-
 
 /* Main Program */
 // -------------------------------------------------------------
@@ -171,7 +166,7 @@ void loop()
   if (currentMillis - timer > 100)
   {
     unsigned long timeSinceStart = millis();
-    
+
     // MPU gets data from updates
     float L_yaw = mpu6050_2.getAngleY();
     float L_yawVel = 0;
@@ -294,15 +289,12 @@ void loop()
       R_PMW_X_acc = 0;
       R_PMW_Y_acc = 0;
     }
-    // -------------------------------------------------------------
-
 
     /* Force sensors read at Pin A0, A1, A2, A3 */
     // -------------------------------------------------------------
     D_force = (analogRead(DFORCE_DATA_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
     U_force = (analogRead(UFORCE_DATA_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
     // -------------------------------------------------------------
-
 
     /* Print sensor data from Serial */
     // Division by 1000.00 to convert pitch and yaw to smaller digit value
@@ -315,11 +307,10 @@ void loop()
     //              "|" + String(xR) + "|" + String(yR) + "|" + String(zR) + "|" + String(xL) + "|" + String(yL) + "|" + String(zL) + "|" + String(data1.isMotion && data1.isOnSurface) +
     //              "|" + String(data2.isMotion && data2.isOnSurface) + '\n');
 
-    // OLD PRINT STATMENT 
-    // Serial.println(String(force) + "|" + String(L_pitchAcc / 1000.00) + "|" + String(L_yawAcc / 1000.00) + "|" + String(R_pitchAcc / 1000.00) + "|" + 
-    // String(R_yawAcc / 1000.00) + "|" + String(L_PMW_Y_acc) + "|" + String(L_PMW_X_acc) + "|" + String(R_PMW_Y_acc) + "|" + String(R_PMW_X_acc) + '\n');
+    // OLD PRINT STATMENT
+    // Serial.println(String(force) + "|" + String(L_pitchAcc / 1000.00) + "|" + String(L_yawAcc / 1000.00) + "|" + String(R_pitchAcc / 1000.00) + "|" +
+    //                String(R_yawAcc / 1000.00) + "|" + String(L_PMW_Y_acc) + "|" + String(L_PMW_X_acc) + "|" + String(R_PMW_Y_acc) + "|" + String(R_PMW_X_acc) + '\n');
     // -------------------------------------------------------------
-
 
     /* Save previous values */
     // -------------------------------------------------------------
