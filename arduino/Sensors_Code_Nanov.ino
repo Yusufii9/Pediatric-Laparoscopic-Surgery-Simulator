@@ -1,9 +1,9 @@
 /*********************************************************************************************
 Author: Atallah Madi 
-Date: October 7th, 2023
+Date: October 26th, 2023
 Purpose: This code is used to read data from the MPU6050, PMW3389, and Force sensors.
 The data is then sent to the computer via Serial. The data is then read by Python Application
-This code is for the Arduino Nano Every
+This code is for the Arduino Nano.
 *********************************************************************************************/
 
 
@@ -19,11 +19,8 @@ This code is for the Arduino Nano Every
 
 /* Initializing Libraries */
 // ---------------------------------------------------------------
-// PMW3389
 PMW3389 sensor1; 
 PMW3389 sensor2;
-
-// MPU6050
 MPU6050 mpu6050_1(Wire); 
 MPU60502 mpu6050_2(Wire); 
 // ---------------------------------------------------------------
@@ -31,18 +28,18 @@ MPU60502 mpu6050_2(Wire);
 
 /* Constants declaration, and pins declaration */
 // ---------------------------------------------------------------
-const int SERIAL_BAUD_RATE = 31250; // Serial baud rate
+const int SERIAL_BAUD_RATE = 31250; 
 
 // SPI pins, digital pins
-const int MISO_PIN = 12;  // MISO Pin 12, was 50 on MEGA
-const int MOSI_PIN = 11;  // MOSI Pin 11, was 51 on MEGA
-const int SCK_PIN = 13;   // SCK Pin 13, was 52 on MEGA
-const int SS_PIN_1 = 10;  // SS Pin 10, was 53 on MEGA
-const int SS_PIN_2 = 9;   // SS Pin 9, was 40 on MEGA
+const int MISO_PIN = 12;  // D12
+const int MOSI_PIN = 11;  // D11
+const int SCK_PIN = 13;   // D13
+const int SS_PIN_1 = 8;   // D8
+const int SS_PIN_2 = 7;   // D7
 
 // I2C pins, digital pins
-const int SDA_PIN = 20;
-const int SCL_PIN = 21;
+const int SDA_PIN = 18;   // A4
+const int SCL_PIN = 19;   // A5
 
 // Force sensor pins, analog pins
 const int FORCE_1_PIN = 14; // A0
@@ -54,11 +51,8 @@ const int FORCE_4_PIN = 17; // A3
 
 /* Variables declaration */ 
 // ---------------------------------------------------------------
- // timer for MPU6050
-long timer = millis();
-
-// timer for PMW3389
-long prevTimeSinceStart = millis(); 
+long timer = millis();   // timer for MPU6050
+long prevTimeSinceStart = millis(); // timer for PMW3389
 
 // Sensor variables
 float force = 0;
@@ -113,32 +107,27 @@ float prev_R_PMW_Y_vel = 0;
 float globalCalibrationValue = 0;
 // ---------------------------------------------------------------
 
-
+/* Auto Calibration for Force Sensors */
 void calibrateForceSensors() {
-  const int calibrationReadings = 1000; // Adjust the number of readings as needed
-  float calibrationSum = 0;
+  const int calibrationReadings = 500; // Adjust the number of readings as needed (500 is a good start)
+  int calibrationSum = 0;
 
   for (int i = 0; i < calibrationReadings; i++) {
     // Read the force sensor values and accumulate them
     calibrationSum += analogRead(FORCE_1_PIN);
     calibrationSum += analogRead(FORCE_2_PIN); 
     calibrationSum += analogRead(FORCE_3_PIN);
-    calibrationSum += analogRead(FORCE_4_PIN); 
-    delay(10); // Adjust the delay between readings as needed
+    calibrationSum += analogRead(FORCE_4_PIN);
+    delay(0.1);
   }
-
-  // Calculate the average value
+  Serial.println("Force Sensors Calibration Completed");
   float calibrationValue = (calibrationSum / 4) / calibrationReadings;
   globalCalibrationValue = calibrationValue; 
-
-  // Store the calibration value as the reference point
-  // You may need to store it in a global variable or adjust your code accordingly
-  // For example: globalCalibrationValue = calibrationValue;
 }
 
-
+/* Intializing Sensors */
 void setup() {
-  Serial.begin(SERIAL_BAUD_RATE); // Initialize Serial
+  Serial.begin(SERIAL_BAUD_RATE);
   /* MPU portion */
   // -------------------------------------------------------------
   Wire.begin();
@@ -153,7 +142,7 @@ void setup() {
   /* PMW3389 portion */
   // -------------------------------------------------------------
   SPI.begin();                  // Initialize SPI bus
-  SPI.setDataMode(SPI_MODE0);   // CPOL = 0, CPHA = 0
+  SPI.setDataMode(SPI_MODE0);   // CPOL = 0, CPHA = 0 
   SPI.setBitOrder(MSBFIRST);    // MSB first
   SPI.setClockDivider(SPI_CLOCK_DIV16); // Adjust the clock divider as needed
 
@@ -174,7 +163,7 @@ void setup() {
   // -------------------------------------------------------------
 }
 
-
+/* Main Program */
 void loop() {
   unsigned long currentMillis = millis(); // current time for MPU6050 in milliseconds
   mpu6050_1.update(); // update MPU6050
@@ -319,14 +308,34 @@ void loop() {
     float zR = mpu6050_2.getAccZ();
     // -------------------------------------------------------------
 
-    /* Print sensor data to Serial */
+    /* Print sensor data from Serial */
     // -------------------------------------------------------------
-    Serial.print(String(force) + "|" + String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" + String(R_pitchAcc / 1000) + "|" + String(R_yawAcc / 1000) + "|" + String(L_PMW_Y_acc / 10) +
-                 "|" + String(L_PMW_X_acc / 10) + "|" + String(R_PMW_Y_acc / 10) + "|" + String(R_PMW_X_acc / 10) + "|" + String(L_pitchVel) + "|" + String(L_yawVel) + "|" + String(R_pitchVel) +
-                 "|" + String(R_yawVel) + "|" + String(L_PMW_Y_vel) + "|" + String(L_PMW_X_vel) + "|" + String(R_PMW_Y_vel) + "|" + String(R_PMW_X_vel) + "|" + String(L_pitch) +
-                 "|" + String(L_yaw) + "|" + String(R_pitch) + "|" + String(R_yaw) + "|" + String(L_PMW_Y) + "|" + String(L_PMW_X) + "|" + String(R_PMW_Y) + "|" + String(R_PMW_X) +
-                 "|" + String(xR) + "|" + String(yR) + "|" + String(zR) + "|" + String(xL) + "|" + String(yL) + "|" + String(zL) + "|" + String(data1.isMotion && data1.isOnSurface) +
-                 "|" + String(data2.isMotion && data2.isOnSurface) + '\n');
+    // Serial.print(String(force) + "|" + String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" + String(R_pitchAcc / 1000) + "|" + String(R_yawAcc / 1000) + "|" + String(L_PMW_Y_acc / 10) +
+    //              "|" + String(L_PMW_X_acc / 10) + "|" + String(R_PMW_Y_acc / 10) + "|" + String(R_PMW_X_acc / 10) + "|" + String(L_pitchVel) + "|" + String(L_yawVel) + "|" + String(R_pitchVel) +
+    //              "|" + String(R_yawVel) + "|" + String(L_PMW_Y_vel) + "|" + String(L_PMW_X_vel) + "|" + String(R_PMW_Y_vel) + "|" + String(R_PMW_X_vel) + "|" + String(L_pitch) +
+    //              "|" + String(L_yaw) + "|" + String(R_pitch) + "|" + String(R_yaw) + "|" + String(L_PMW_Y) + "|" + String(L_PMW_X) + "|" + String(R_PMW_Y) + "|" + String(R_PMW_X) +
+    //              "|" + String(xR) + "|" + String(yR) + "|" + String(zR) + "|" + String(xL) + "|" + String(yL) + "|" + String(zL) + "|" + String(data1.isMotion && data1.isOnSurface) +
+    //              "|" + String(data2.isMotion && data2.isOnSurface) + '\n');
+    // -------------------------------------------------------------
+
+
+    /* Test/ Debugging Section*/
+    // -------------------------------------------------------------
+    // FORCE
+    Serial.println("1. Analog RAW force= "                  + String(analogRead(FORCE_1_PIN))                             + '\n' + 
+                   "2. Analog Voltage Read= "               + String(analogRead(FORCE_1_PIN)*(5.0 / 1023.0))          + '\n' + 
+                   "3. Analog Force with offset= "          + String(analogRead(FORCE_1_PIN) - globalCalibrationValue)    + '\n' + 
+                   "4. Analog Force with offset and conv= " + String(force_1) +" Offset= "+String(globalCalibrationValue) + '\n');
+    // MPU6050
+    Serial.println("1. Left: Yaw =" + String(L_yaw) + " | Pitch=" + String(L_pitch) + '\n' +
+                   "2. Left Offsets: X=" + String(xL) + " | Y=" + String(yL) + " | Z=" + String(zL) + '\n' +
+                   "3. Right: Yaw =" + String(R_yaw) + " | Pitch=" + String(R_pitch) + '\n' +
+                   "4. Right Offsets: X=" + String(xR) + " | Y=" + String(yR) + " | Z=" + String(zR) + '\n');
+    // PMW3389
+    Serial.println("1. Left: Yaw =" + String(L_yaw) + " | Pitch=" + String(L_pitch) + '\n' +
+                   "2. Left Offsets: X=" + String(xL) + " | Y=" + String(yL) + " | Z=" + String(zL) + '\n' +
+                   "3. Right: Yaw =" + String(R_yaw) + " | Pitch=" + String(R_pitch) + '\n' +
+                   "4. Right Offsets: X=" + String(xR) + " | Y=" + String(yR) + " | Z=" + String(zR) + '\n');
     // -------------------------------------------------------------
 
     /* Save previous values */
