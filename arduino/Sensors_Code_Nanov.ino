@@ -23,7 +23,7 @@ HX711 scale2;
 PMW3389 sensor1;
 PMW3389 sensor2;
 MPU6050 mpu6050_1(Wire);
-MPU60502 mpu6050_2(Wire);
+MPU6050 mpu6050_2(Wire);
 // ---------------------------------------------------------------
 
 /* Constants declaration, and pins declaration */
