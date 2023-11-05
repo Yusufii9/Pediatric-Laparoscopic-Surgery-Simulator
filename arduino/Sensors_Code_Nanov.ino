@@ -333,6 +333,5 @@ void loop()
     prev_R_PMW_X_vel = R_PMW_X_vel;
     prev_R_PMW_Y = R_PMW_Y;
     prev_R_PMW_Y_vel = R_PMW_Y_vel;
-    // -------------------------------------------------------------
   }
 }
