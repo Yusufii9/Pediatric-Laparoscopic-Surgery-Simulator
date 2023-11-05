@@ -8,12 +8,11 @@ This code is for the Arduino Nano.
 
 /* Libraries  */
 // ---------------------------------------------------------------
-#include <MPU6050_2.h> // Include the library for MPU6050 sensor 2
-#include <MPU6050_1.h> // Include the library for MPU6050 sensor 1
+#include <MPU6050.h> // Include the library for MPU6050 sensor
 #include <PMW3389.h>   // Include the library for PMW3389 sensor
+#include <HX711.h>     // Include the HX711 library for force sensors
 #include <Wire.h>      // Include the Wire library for I2C communication
 #include <SPI.h>       // Include the SPI library for SPI communication
-#include <HX711.h>     // Include the HX711 library for force sensors
 // ---------------------------------------------------------------
 
 /* Initializing Libraries */
