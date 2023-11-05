@@ -46,6 +46,9 @@ const int DFORCE_CLK_PIN = 14;  // A0
 const int DFORCE_DATA_PIN = 15; // A1
 const int UFORCE_CLK_PIN = 16;  // A2
 const int UFORCE_DATA_PIN = 17; // A3
+
+const float SCALE_OFFSET = 136; // this value is obtained by calibrating the scale with known weights
+const float SCALE_FACTOR = 0.009806652 ; // Newtons = Grams * 0.009806652
 // ---------------------------------------------------------------
 
 /* Variables declaration */
@@ -114,8 +117,8 @@ float prev_R_PMW_Y_vel = 0;
 // -------------------------------------------------------------
 void setup()
 {
-  Serial.begin(SERIAL_BAUD_RATE);
   Wire.begin();
+  Serial.begin(SERIAL_BAUD_RATE);
 
   // MPU portion
   mpu6050_1.begin();
@@ -147,6 +150,9 @@ void setup()
   // Force sensor portion
   scale1.begin(DFORCE_DATA_PIN, DFORCE_CLK_PIN);
   scale2.begin(UFORCE_DATA_PIN, UFORCE_CLK_PIN);
+  
+  scale1.set_scale(SCALE_OFFSET); 
+  scale2.set_scale(SCALE_OFFSET); 
 
   scale1.tare();
   scale2.tare();
@@ -289,10 +295,10 @@ void loop()
       R_PMW_Y_acc = 0;
     }
 
-    /* Force sensors read at Pin A0, A1, A2, A3 */
+    /* Force sensors readings */
     // -------------------------------------------------------------
-    D_force = (analogRead(DFORCE_DATA_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
-    U_force = (analogRead(UFORCE_DATA_PIN) - 136) * 0.011; // 136 offset to try to "zero" the value
+    D_force = (scale1.get_units()) * SCALE_FACTOR; 
+    U_force = (scale2.get_units()) * SCALE_FACTOR;
     // -------------------------------------------------------------
 
     /* Print sensor data from Serial */
