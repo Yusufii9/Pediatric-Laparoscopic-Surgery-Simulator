@@ -8,7 +8,8 @@ This code is for the Arduino Nano.
 
 /* Libraries  */
 // ---------------------------------------------------------------
-#include <MPU6050.h> // Include the library for MPU6050 sensor
+#include <MPU6050_1.h> // Include the library for MPU6050 sensor
+#include <MPU6050_2.h> // Include the library for MPU6050 sensor
 #include <PMW3389.h>   // Include the library for PMW3389 sensor
 #include <HX711.h>     // Include the HX711 library for force sensors
 #include <Wire.h>      // Include the Wire library for I2C communication
@@ -21,8 +22,8 @@ HX711 scale1;
 HX711 scale2;
 PMW3389 sensor1;
 PMW3389 sensor2;
-MPU6050 mpu6050_1(Wire);
-MPU6050 mpu6050_2(Wire);
+MPU6050  mpu6050_1(Wire);
+MPU60502 mpu6050_2(Wire);
 // ---------------------------------------------------------------
 
 /* Constants declaration, and pins declaration */
@@ -122,8 +123,7 @@ void setup()
   mpu6050_2.begin();
   mpu6050_2.calcGyroOffsets(true);
 
-  while (!Serial)
-    ; // Wait for serial to initialize.
+  while (!Serial); // Wait for serial to initialize.
 
   // PMW3389 portion
   /*
