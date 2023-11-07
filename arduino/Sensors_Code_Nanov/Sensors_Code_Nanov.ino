@@ -1,6 +1,7 @@
 /*********************************************************************************************
 Author: Atallah Madi
-Date: October 26th, 2023
+Date: October 21th, 2023
+Last edited: November 6th, 2023
 Purpose: This code is used to read data from the MPU6050, PMW3389, and Force sensors.
 The data is then sent to the computer via Serial. The data is then read by Python Application
 This code is for the Arduino Nano.
@@ -20,10 +21,10 @@ This code is for the Arduino Nano.
 // ---------------------------------------------------------------
 HX711 scale1;
 HX711 scale2;
-PMW3389 sensor1;
-PMW3389 sensor2;
-MPU6050  mpu6050_1(Wire);
-MPU60502 mpu6050_2(Wire);
+PMW3389 sensor1;          // LEFT HAND
+PMW3389 sensor2;          // RIGHT HAND
+MPU6050 mpu6050_1(Wire);  // LEFT HAND
+MPU60502 mpu6050_2(Wire); // RIGHT HAND
 // ---------------------------------------------------------------
 
 /* Constants declaration, and pins declaration */
@@ -47,8 +48,8 @@ const int DFORCE_DATA_PIN = 15; // A1
 const int UFORCE_CLK_PIN = 16;  // A2
 const int UFORCE_DATA_PIN = 17; // A3
 
-const float SCALE_OFFSET = 136; // this value is obtained by calibrating the scale with known weights
-const float SCALE_FACTOR = 0.009806652 ; // Newtons = Grams * 0.009806652
+const float SCALE_OFFSET = 136;         // this value is obtained by calibrating the scale with known weights
+const float SCALE_FACTOR = 0.009806652; // Newtons = Grams * 0.009806652
 // ---------------------------------------------------------------
 
 /* Variables declaration */
@@ -57,10 +58,13 @@ long timer = millis();              // timer for MPU6050
 long prevTimeSinceStart = millis(); // timer for PMW3389
 
 // Sensor variables
-float x1 = 0;
-float x2 = 0;
-float y1 = 0;
-float y2 = 0;
+float xL = 0;
+float yL = 0;
+float zL = 0;
+
+float xR = 0;
+float yR = 0;
+float zR = 0;
 
 float D_force = 0;
 float U_force = 0;
@@ -126,7 +130,8 @@ void setup()
   mpu6050_2.begin();
   mpu6050_2.calcGyroOffsets(true);
 
-  while (!Serial); // Wait for serial to initialize.
+  while (!Serial)
+    ; // Wait for serial to initialize.
 
   // PMW3389 portion
   /*
@@ -150,9 +155,9 @@ void setup()
   // Force sensor portion
   scale1.begin(DFORCE_DATA_PIN, DFORCE_CLK_PIN);
   scale2.begin(UFORCE_DATA_PIN, UFORCE_CLK_PIN);
-  
-  scale1.set_scale(SCALE_OFFSET); 
-  scale2.set_scale(SCALE_OFFSET); 
+
+  scale1.set_scale(SCALE_OFFSET);
+  scale2.set_scale(SCALE_OFFSET);
 
   scale1.tare();
   scale2.tare();
@@ -234,7 +239,6 @@ void loop()
     if (data1.isMotion || data1.isOnSurface)
     {
       L_PMW_X = ((data1.dx)) + L_PMW_X; // converts to 1mm since 16,000 CPI 16000=32767 in two's compliment so 32767=16,000=inch=25.4mm therefore 1290=1mmm.
-
       L_PMW_Y = ((data1.dy)) + L_PMW_Y; // Can measure 10cm on ruler and use that bit value to convert
     }
     if (data2.isMotion || data2.isOnSurface)
@@ -288,34 +292,70 @@ void loop()
     {
       L_PMW_X_acc = 0;
       L_PMW_Y_acc = 0;
+      L_PMW_X_vel = 0;
+      L_PMW_Y_vel = 0;
+      L_PMW_X = 0;
+      L_PMW_Y = 0;
     }
     if (!(data2.isMotion || data2.isOnSurface))
     {
       R_PMW_X_acc = 0;
       R_PMW_Y_acc = 0;
+      R_PMW_X_vel = 0;
+      R_PMW_Y_vel = 0;
+      R_PMW_X = 0;
+      R_PMW_Y = 0;
     }
 
     /* Force sensors readings */
     // -------------------------------------------------------------
-    D_force = (scale1.get_units()) * SCALE_FACTOR; 
+    D_force = (scale1.get_units()) * SCALE_FACTOR;
     U_force = (scale2.get_units()) * SCALE_FACTOR;
     // -------------------------------------------------------------
 
-    /* Print sensor data from Serial */
-    // Division by 1000.00 to convert pitch and yaw to smaller digit value
-    // -------------------------------------------------------------
-    // CURRENT PRINT STATMENT
-    // Serial.print(String(force) + "|" + String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" + String(R_pitchAcc / 1000) + "|" + String(R_yawAcc / 1000) + "|" + String(L_PMW_Y_acc / 10) +
-    //              "|" + String(L_PMW_X_acc / 10) + "|" + String(R_PMW_Y_acc / 10) + "|" + String(R_PMW_X_acc / 10) + "|" + String(L_pitchVel) + "|" + String(L_yawVel) + "|" + String(R_pitchVel) +
-    //              "|" + String(R_yawVel) + "|" + String(L_PMW_Y_vel) + "|" + String(L_PMW_X_vel) + "|" + String(R_PMW_Y_vel) + "|" + String(R_PMW_X_vel) + "|" + String(L_pitch) +
-    //              "|" + String(L_yaw) + "|" + String(R_pitch) + "|" + String(R_yaw) + "|" + String(L_PMW_Y) + "|" + String(L_PMW_X) + "|" + String(R_PMW_Y) + "|" + String(R_PMW_X) +
-    //              "|" + String(xR) + "|" + String(yR) + "|" + String(zR) + "|" + String(xL) + "|" + String(yL) + "|" + String(zL) + "|" + String(data1.isMotion && data1.isOnSurface) +
-    //              "|" + String(data2.isMotion && data2.isOnSurface) + '\n');
+    /* Pull additional data from MPU6050 */
+    xL = mpu6050_1.getAccX();
+    yL = mpu6050_1.getAccY();
+    zL = mpu6050_1.getAccZ();
 
-    // OLD PRINT STATMENT
+    xR = mpu6050_2.getAccX();
+    yR = mpu6050_2.getAccY();
+    zR = mpu6050_2.getAccZ();
+
+    /*
+    Print sensor data from Serial into .txt file
+    D_force = Downwards force
+    U_force = Upwards force
+    L_PMW_Y / R_PMW_Y = surge
+    L_PMW_X / R_PMW_X = roll
+    L_pitch / R_pitch = pitch
+    L_yaw / R_yaw = yaw
+    */
+    // -------------------------------------------------------------
+
+    // OLD PRINT STATMENT !!!
+    // Division by 1000.00 to convert pitch and yaw to smaller digit value
     // Serial.println(String(force) + "|" + String(L_pitchAcc / 1000.00) + "|" + String(L_yawAcc / 1000.00) + "|" + String(R_pitchAcc / 1000.00) + "|" +
     //                String(R_yawAcc / 1000.00) + "|" + String(L_PMW_Y_acc) + "|" + String(L_PMW_X_acc) + "|" + String(R_PMW_Y_acc) + "|" + String(R_PMW_X_acc) + '\n');
-    // -------------------------------------------------------------
+
+    // CURRENT PRINT STATMENT
+    Serial.println(String(D_force) + "|" + String(U_force) + "|" +
+                   String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" +
+                   String(R_pitchAcc / 1000) + "|" + String(R_yawAcc / 1000) + "|" +
+                   String(L_PMW_Y_acc) + "|" + String(L_PMW_X_acc) + "|" +
+                   String(R_PMW_Y_acc) + "|" + String(R_PMW_X_acc) + "|" +
+                   String(L_pitchVel) + "|" + String(L_yawVel) + "|" +
+                   String(R_pitchVel) + "|" + String(R_yawVel) + "|" +
+                   String(L_PMW_Y_vel) + "|" + String(L_PMW_X_vel) + "|" +
+                   String(R_PMW_Y_vel) + "|" + String(R_PMW_X_vel) + "|" +
+                   String(L_pitch) + "|" + String(L_yaw) + "|" +
+                   String(R_pitch) + "|" + String(R_yaw) + "|" +
+                   String(L_PMW_Y) + "|" + String(L_PMW_X) + "|" +
+                   String(R_PMW_Y) + "|" + String(R_PMW_X) + "|" +
+                   String(xR) + "|" + String(yR) + "|" + String(zR) + "|" +
+                   String(xL) + "|" + String(yL) + "|" + String(zL) + "|" +
+                   String(data1.isMotion && data1.isOnSurface) + "|" +
+                   String(data2.isMotion && data2.isOnSurface));
 
     /* Save previous values */
     // -------------------------------------------------------------
