@@ -17,39 +17,42 @@ This code is for the Arduino Nano.
 #include <SPI.h>       // Include the SPI library for SPI communication
 // ---------------------------------------------------------------
 
+/* Constants declaration, and pins definition */
+// ---------------------------------------------------------------
+// I2C pins, digital pins
+#define SCL_PIN 19 // A5
+#define SDA_PIN 18 // A4
+
+// SPI pins, digital pins
+#define SCK_PIN 13  // D13
+#define MISO_PIN 12 // D12
+#define MOSI_PIN 11 // D11
+#define SS_PIN_1 8  // D8
+#define SS_PIN_2 7  // D7
+
+// Force sensor pins, digital pins
+#define FORCE_4_PIN 6   // D6
+#define FORCE_3_PIN 5   // D5
+#define FORCE_2_PIN 4   // D4
+#define FORCE_1_PIN 3   // D3
+#define FORCE_CLK_PIN 2 // D2
+
+const int SERIAL_BAUD_RATE = 31250;
+
+const float SCALE_FACTOR = 0;                // this value is obtained by calibrating the scale with known weights
+const float SCALE_CONV_FACTOR = 0.009806652; // Newtons = Grams * 0.009806652
+// ---------------------------------------------------------------
+
 /* Initializing Libraries */
 // ---------------------------------------------------------------
 HX711 scale1;
 HX711 scale2;
+HX711 scale3;
+HX711 scale4;
 PMW3389 sensor1;          // LEFT HAND
 PMW3389 sensor2;          // RIGHT HAND
 MPU6050 mpu6050_1(Wire);  // LEFT HAND
 MPU60502 mpu6050_2(Wire); // RIGHT HAND
-// ---------------------------------------------------------------
-
-/* Constants declaration, and pins declaration */
-// ---------------------------------------------------------------
-const int SERIAL_BAUD_RATE = 31250;
-
-// SPI pins, digital pins
-const int MISO_PIN = 12; // D12
-const int MOSI_PIN = 11; // D11
-const int SCK_PIN = 13;  // D13
-const int SS_PIN_1 = 8;  // D8
-const int SS_PIN_2 = 7;  // D7
-
-// I2C pins, digital pins
-const int SDA_PIN = 18; // A4
-const int SCL_PIN = 19; // A5
-
-// Force sensor pins, analog pins
-const int DFORCE_CLK_PIN = 14;  // A0
-const int DFORCE_DATA_PIN = 15; // A1
-const int UFORCE_CLK_PIN = 16;  // A2
-const int UFORCE_DATA_PIN = 17; // A3
-
-const float SCALE_OFFSET = 136;         // this value is obtained by calibrating the scale with known weights
-const float SCALE_FACTOR = 0.009806652; // Newtons = Grams * 0.009806652
 // ---------------------------------------------------------------
 
 /* Variables declaration */
@@ -66,8 +69,7 @@ float xR = 0;
 float yR = 0;
 float zR = 0;
 
-float D_force = 0;
-float U_force = 0;
+float force = 0;
 
 float L_pitch = 0;
 float L_yaw = 0;
@@ -133,34 +135,24 @@ void setup()
   while (!Serial)
     ; // Wait for serial to initialize.
 
-  // PMW3389 portion
-  /*
-  NOT IN THE OLD CODE !!!
-  SPI.begin();                  // Initialize SPI bus
-  SPI.setDataMode(SPI_MODE0);   // CPOL = 0, CPHA = 0
-  SPI.setBitOrder(MSBFIRST);    // MSB first
-  SPI.setClockDivider(SPI_CLOCK_DIV16); // Adjust the clock divider as needed
-
-  // Initialize the SS pins
-  pinMode(SS_PIN_1, OUTPUT);    // Set SS pins as outputs
-  pinMode(SS_PIN_2, OUTPUT);    // Set SS pins as outputs
-
-  digitalWrite(SS_PIN_1, HIGH); // Set SS pins high initially
-  digitalWrite(SS_PIN_2, HIGH); // Set SS pins high initially
-  */
-
   sensor1.begin(SS_PIN_1, 16000); // to set CPI (Count per Inch), pass it as the
   sensor2.begin(SS_PIN_2, 16000); // second argument to the begin function
 
   // Force sensor portion
-  scale1.begin(DFORCE_DATA_PIN, DFORCE_CLK_PIN);
-  scale2.begin(UFORCE_DATA_PIN, UFORCE_CLK_PIN);
+  scale1.begin(FORCE_1_PIN, FORCE_CLK_PIN);
+  scale2.begin(FORCE_2_PIN, FORCE_CLK_PIN);
+  scale3.begin(FORCE_3_PIN, FORCE_CLK_PIN);
+  scale4.begin(FORCE_4_PIN, FORCE_CLK_PIN);
 
-  scale1.set_scale(SCALE_OFFSET);
-  scale2.set_scale(SCALE_OFFSET);
+  scale1.set_scale(SCALE_FACTOR); // RAW_Reading/SCALE_FACTOR = grams
+  scale2.set_scale(SCALE_FACTOR);
+  scale3.set_scale(SCALE_FACTOR);
+  scale4.set_scale(SCALE_FACTOR);
 
-  scale1.tare();
-  scale2.tare();
+  scale1.tare(); // reset the scale to 0
+  scale2.tare(); // sets current weight as to offset
+  scale3.tare(); // RAW_Reading - OFFSET = 0
+  scale4.tare();
 }
 
 /* Main Program */
@@ -309,37 +301,14 @@ void loop()
 
     /* Force sensors readings */
     // -------------------------------------------------------------
-    D_force = (scale1.get_units()) * SCALE_FACTOR;
-    U_force = (scale2.get_units()) * SCALE_FACTOR;
+    force = (scale1.get_value(5) + scale2.get_value(5) +
+             scale3.get_value(5) + scale4.get_value(5) / 4); // get_value() = (RAW_Reading - OFFSET ) / SCALE_FACTOR = grams
+    force = (force * SCALE_CONV_FACTOR);                     // Mean of all 4 sensors readings in Newtons
     // -------------------------------------------------------------
 
-    /* Pull additional data from MPU6050 */
-    xL = mpu6050_1.getAccX();
-    yL = mpu6050_1.getAccY();
-    zL = mpu6050_1.getAccZ();
-
-    xR = mpu6050_2.getAccX();
-    yR = mpu6050_2.getAccY();
-    zR = mpu6050_2.getAccZ();
-
-    /*
-    Print sensor data from Serial into .txt file
-    D_force = Downwards force
-    U_force = Upwards force
-    L_PMW_Y / R_PMW_Y = surge
-    L_PMW_X / R_PMW_X = roll
-    L_pitch / R_pitch = pitch
-    L_yaw / R_yaw = yaw
-    */
+    /* Print sensor data from Serial into .txt file */
     // -------------------------------------------------------------
-
-    // OLD PRINT STATMENT !!!
-    // Division by 1000.00 to convert pitch and yaw to smaller digit value
-    // Serial.println(String(force) + "|" + String(L_pitchAcc / 1000.00) + "|" + String(L_yawAcc / 1000.00) + "|" + String(R_pitchAcc / 1000.00) + "|" +
-    //                String(R_yawAcc / 1000.00) + "|" + String(L_PMW_Y_acc) + "|" + String(L_PMW_X_acc) + "|" + String(R_PMW_Y_acc) + "|" + String(R_PMW_X_acc) + '\n');
-
-    // CURRENT PRINT STATMENT
-    Serial.println(String(D_force) + "|" + String(U_force) + "|" +
+    Serial.println(String(force) + "|" +
                    String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" +
                    String(R_pitchAcc / 1000) + "|" + String(R_yawAcc / 1000) + "|" +
                    String(L_PMW_Y_acc) + "|" + String(L_PMW_X_acc) + "|" +
@@ -352,10 +321,14 @@ void loop()
                    String(R_pitch) + "|" + String(R_yaw) + "|" +
                    String(L_PMW_Y) + "|" + String(L_PMW_X) + "|" +
                    String(R_PMW_Y) + "|" + String(R_PMW_X) + "|" +
-                   String(xR) + "|" + String(yR) + "|" + String(zR) + "|" +
-                   String(xL) + "|" + String(yL) + "|" + String(zL) + "|" +
                    String(data1.isMotion && data1.isOnSurface) + "|" +
                    String(data2.isMotion && data2.isOnSurface));
+
+    // force = if +ve, then it is pushing down, if -ve, then it is pushing up
+    // L_PMW_Y / R_PMW_Y = surge
+    // L_PMW_X / R_PMW_X = roll
+    // L_pitch / R_pitch = pitch
+    // L_yaw / R_yaw = yaw
 
     /* Save previous values */
     // -------------------------------------------------------------
