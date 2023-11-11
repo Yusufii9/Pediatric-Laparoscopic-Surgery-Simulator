@@ -1,24 +1,24 @@
 /*********************************************************************************************
 Author: Atallah Madi
 Date: October 21th, 2023
-Last edited: November 6th, 2023
-Purpose: This code is used to read data from the MPU6050, PMW3389, and Force sensors.
-The data is then sent to the computer via Serial. The data is then read by Python Application
-This code is for the Arduino Nano.
+Last edited: November 10th, 2023
+Purpose: This code is used to read data from MPU6050, PMW3389, HX711 ADC and Load cells.
+         The data is then sent to the computer via Serial. The data is then read by Python Application
+         This code is for the Arduino Nano.
 *********************************************************************************************/
 
-/* Libraries  */
-// ---------------------------------------------------------------
+// Libraries
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #include <MPU6050_1.h> // Include the library for MPU6050 sensor
 #include <MPU6050_2.h> // Include the library for MPU6050 sensor
 #include <PMW3389.h>   // Include the library for PMW3389 sensor
 #include <HX711.h>     // Include the HX711 library for force sensors
 #include <Wire.h>      // Include the Wire library for I2C communication
 #include <SPI.h>       // Include the SPI library for SPI communication
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* Constants declaration, and pins definition */
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // I2C pins, digital pins
 #define SCL_PIN 19 // A5
 #define SDA_PIN 18 // A4
@@ -39,12 +39,12 @@ This code is for the Arduino Nano.
 
 const int SERIAL_BAUD_RATE = 31250;
 
-const float SCALE_FACTOR = 0;                // this value is obtained by calibrating the scale with known weights
+const float SCALE_FACTOR = 830;              // this value is obtained by calibrating the scale with known weights
 const float SCALE_CONV_FACTOR = 0.009806652; // Newtons = Grams * 0.009806652
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* Initializing Libraries */
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 HX711 scale1;
 HX711 scale2;
 HX711 scale3;
@@ -53,10 +53,10 @@ PMW3389 sensor1;          // LEFT HAND
 PMW3389 sensor2;          // RIGHT HAND
 MPU6050 mpu6050_1(Wire);  // LEFT HAND
 MPU60502 mpu6050_2(Wire); // RIGHT HAND
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* Variables declaration */
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 long timer = millis();              // timer for MPU6050
 long prevTimeSinceStart = millis(); // timer for PMW3389
 
@@ -70,6 +70,7 @@ float yR = 0;
 float zR = 0;
 
 float force = 0;
+int weight = 0;
 
 float L_pitch = 0;
 float L_yaw = 0;
@@ -117,10 +118,10 @@ float prev_R_PMW_X = 0;
 float prev_R_PMW_Y = 0;
 float prev_R_PMW_X_vel = 0;
 float prev_R_PMW_Y_vel = 0;
-// ---------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 /* Intializing Sensors */
-// -------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void setup()
 {
   Wire.begin();
@@ -156,7 +157,7 @@ void setup()
 }
 
 /* Main Program */
-// -------------------------------------------------------------
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 void loop()
 {
   unsigned long currentMillis = millis(); // current time for MPU6050 in milliseconds
@@ -300,14 +301,13 @@ void loop()
     }
 
     /* Force sensors readings */
-    // -------------------------------------------------------------
-    force = (scale1.get_value(5) + scale2.get_value(5) +
-             scale3.get_value(5) + scale4.get_value(5) / 4); // get_value() = (RAW_Reading - OFFSET ) / SCALE_FACTOR = grams
-    force = (force * SCALE_CONV_FACTOR);                     // Mean of all 4 sensors readings in Newtons
-    // -------------------------------------------------------------
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    weight = scale1.get_units(2) + scale2.get_units(2) + scale3.get_units(2) + scale4.get_units(2); // grams
+    force = (weight * SCALE_CONV_FACTOR);                                                           // Newtons
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /* Print sensor data from Serial into .txt file */
-    // -------------------------------------------------------------
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Serial.println(String(force) + "|" +
                    String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" +
                    String(R_pitchAcc / 1000) + "|" + String(R_yawAcc / 1000) + "|" +
@@ -331,7 +331,7 @@ void loop()
     // L_yaw / R_yaw = yaw
 
     /* Save previous values */
-    // -------------------------------------------------------------
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     prevTimeSinceStart = timeSinceStart;
     prev_L_yaw = L_yaw;
     prev_L_yawVel = L_yawVel;
