@@ -1,28 +1,17 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-
-
-import os
-
-import cv2
 import numpy as np
-import math
-import serial
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, CheckButtons
-from mpl_toolkits import mplot3d
-import math
+import matplotlib.pyplot as plt2
+from warnings import simplefilter
+
 
 def plot_all_data():
-    fig, ax = plt.subplots(15,2,gridspec_kw={'width_ratios': [15, 15]})
-    #plt.setp(ax[14, 2].get_xticklabels(), fontsize=2, rotation=90)
+    fig, ax = plt.subplots(15, 2, gridspec_kw={"width_ratios": [15, 15]})
+    # plt.setp(ax[14, 2].get_xticklabels(), fontsize=2, rotation=90)
 
     # Set the vertical/horizontal spacing between the subplots
     fig.subplots_adjust(hspace=2, wspace=2)
 
-    #plt.subplots_adjust(bottom=0.3)
+    # plt.subplots_adjust(bottom=0.3)
 
     file = open("sensor_data.txt", "r")
     lines = file.readlines()
@@ -30,9 +19,7 @@ def plot_all_data():
     time = []
     force = []
 
-
     # Acceleration data
-
     L_pitchAcc = []
     L_yawAcc = []
     L_surgeAcc = []
@@ -67,23 +54,16 @@ def plot_all_data():
     R_surge = []
     R_roll = []
 
-    # Position Data
-
-    R_x = []
-    R_y = []
-    R_z = []
-
-    L_x = []
-    L_y = []
-    L_z = []
-
+    # Motion Data
     L_motion = []
     R_motion = []
 
     for line in lines:
-        if (len(line.split("|")) == 34):
-            line = line.strip('\n')  # Remove new line char from end of line
-            vars = line.split("|")  # Split each element of the line into a var split up by | character
+        if len(line.split("|")) == 34:
+            line = line.strip("\n")  # Remove new line char from end of line
+            vars = line.split(
+                "|"
+            )  # Split each element of the line into a var split up by | character
             time.append(vars[0])
             force.append(vars[1])
 
@@ -114,16 +94,8 @@ def plot_all_data():
             R_surge.append(vars[24])
             R_roll.append(vars[25])
 
-            R_x.append(vars[26])
-            R_y.append(vars[27])
-            R_z.append(vars[28])
-
-            L_x.append(vars[29])
-            L_y.append(vars[30])
-            L_z.append(vars[31])
-
-            L_motion.append(vars[32])
-            R_motion.append(vars[33])
+            L_motion.append(vars[26])
+            R_motion.append(vars[27])
 
     file.close()
 
@@ -156,13 +128,6 @@ def plot_all_data():
     R_surge = [f"{float(num):.2f}" for (num) in R_surge]
     L_roll = [f"{float(num):.2f}" for (num) in L_roll]
     R_roll = [f"{float(num):.2f}" for (num) in R_roll]
-
-    R_x = [f"{float(num):.2f}" for (num) in R_x]
-    R_y = [f"{float(num):.2f}" for (num) in R_y]
-    R_z = [f"{float(num):.2f}" for (num) in R_z]
-    L_x = [f"{float(num):.2f}" for (num) in L_x]
-    L_y = [f"{float(num):.2f}" for (num) in L_y]
-    L_z = [f"{float(num):.2f}" for (num) in L_z]
 
     L_motion = [f"{float(num):.2f}" for (num) in L_motion]
     R_motion = [f"{float(num):.2f}" for (num) in R_motion]
@@ -198,17 +163,10 @@ def plot_all_data():
     L_roll = np.array(L_roll, dtype=np.float32)
     R_roll = np.array(R_roll, dtype=np.float32)
 
-    R_x = np.array(R_x, dtype=np.float32)
-    R_y = np.array(R_y, dtype=np.float32)
-    R_z = np.array(R_z, dtype=np.float32)
-    L_x = np.array(L_x, dtype=np.float32)
-    L_y = np.array(L_y, dtype=np.float32)
-    L_z = np.array(L_z, dtype=np.float32)
-
     L_motion = np.array(L_motion, dtype=np.float32)
     R_motion = np.array(R_motion, dtype=np.float32)
 
-    #Scaling down...
+    # Scaling down...
     """for i in range(len(L_surge)):
         L_surge[i] = L_surge[i]/500000
 
@@ -222,103 +180,99 @@ def plot_all_data():
         R_roll[i] = R_roll[i]/500000"""
 
     # Pitch
-    ax[0, 0].plot(np.asarray(time, float), np.asarray(L_pitchAcc, float), visible=True, color='red', label='L_pitchAcc')
-    ax[0, 0].set_title('L_pitchAcc', fontsize=10)
-    ax[0, 1].plot(np.asarray(time, float), R_pitchAcc, 'tab:orange')
-    ax[0, 1].set_title('R_pitchAcc', fontsize=10)
-    ax[1, 0].plot(np.asarray(time, float), L_pitchVel, 'tab:green')
-    ax[1, 0].set_title('L_pitchVel', fontsize=10)
-    ax[1, 1].plot(np.asarray(time, float), R_pitchVel, 'tab:red')
-    ax[1, 1].set_title('R_pitchVel', fontsize=10)
-    ax[2, 0].plot(np.asarray(time, float), L_pitch, 'tab:blue')
-    ax[2, 0].set_title('L_pitch', fontsize=10)
-    ax[2, 1].plot(np.asarray(time, float), R_pitch, 'tab:blue')
-    ax[2, 1].set_title('R_pitch', fontsize=10)
+    ax[0, 0].plot(
+        np.asarray(time, float),
+        np.asarray(L_pitchAcc, float),
+        visible=True,
+        color="red",
+        label="L_pitchAcc",
+    )
+    ax[0, 0].set_title("L_pitchAcc", fontsize=10)
+    ax[0, 1].plot(np.asarray(time, float), R_pitchAcc, "tab:orange")
+    ax[0, 1].set_title("R_pitchAcc", fontsize=10)
+    ax[1, 0].plot(np.asarray(time, float), L_pitchVel, "tab:green")
+    ax[1, 0].set_title("L_pitchVel", fontsize=10)
+    ax[1, 1].plot(np.asarray(time, float), R_pitchVel, "tab:red")
+    ax[1, 1].set_title("R_pitchVel", fontsize=10)
+    ax[2, 0].plot(np.asarray(time, float), L_pitch, "tab:blue")
+    ax[2, 0].set_title("L_pitch", fontsize=10)
+    ax[2, 1].plot(np.asarray(time, float), R_pitch, "tab:blue")
+    ax[2, 1].set_title("R_pitch", fontsize=10)
 
     # Yaw
-    ax[3, 0].plot(np.asarray(time, float), L_yawAcc, 'tab:orange')
-    ax[3, 0].set_title('L_yawAcc', fontsize=10)
-    ax[3, 1].plot(np.asarray(time, float), R_yawAcc, 'tab:orange')
-    ax[3, 1].set_title('R_yawAcc', fontsize=10)
-    ax[4, 0].plot(np.asarray(time, float), L_yawVel, 'tab:green')
-    ax[4, 0].set_title('L_yawVel', fontsize=10)
-    ax[4, 1].plot(np.asarray(time, float), R_yawVel, 'tab:red')
-    ax[4, 1].set_title('R_yawVel', fontsize=10)
-    ax[5, 0].plot(np.asarray(time, float), L_yaw, 'tab:blue')
-    ax[5, 0].set_title('L_yaw', fontsize=10)
-    ax[5, 1].plot(np.asarray(time, float), R_yaw, 'tab:blue')
-    ax[5, 1].set_title('R_yaw', fontsize=10)
+    ax[3, 0].plot(np.asarray(time, float), L_yawAcc, "tab:orange")
+    ax[3, 0].set_title("L_yawAcc", fontsize=10)
+    ax[3, 1].plot(np.asarray(time, float), R_yawAcc, "tab:orange")
+    ax[3, 1].set_title("R_yawAcc", fontsize=10)
+    ax[4, 0].plot(np.asarray(time, float), L_yawVel, "tab:green")
+    ax[4, 0].set_title("L_yawVel", fontsize=10)
+    ax[4, 1].plot(np.asarray(time, float), R_yawVel, "tab:red")
+    ax[4, 1].set_title("R_yawVel", fontsize=10)
+    ax[5, 0].plot(np.asarray(time, float), L_yaw, "tab:blue")
+    ax[5, 0].set_title("L_yaw", fontsize=10)
+    ax[5, 1].plot(np.asarray(time, float), R_yaw, "tab:blue")
+    ax[5, 1].set_title("R_yaw", fontsize=10)
 
     # Surge
-    ax[6, 0].plot(np.asarray(time, float), L_surgeAcc, visible=True, color='red')
-    ax[6, 0].set_title('L_surgeAcc', fontsize=10)
-    ax[6, 1].plot(np.asarray(time, float), R_surgeAcc, 'tab:orange')
-    ax[6, 1].set_title('R_surgeAcc', fontsize=10)
-    ax[7, 0].plot(np.asarray(time, float), L_surgeVel, 'tab:green')
-    ax[7, 0].set_title('L_surgeVel', fontsize=10)
-    ax[7, 1].plot(np.asarray(time, float), R_surgeVel, 'tab:red')
-    ax[7, 1].set_title('R_surgeVel', fontsize=10)
-    ax[8, 0].plot(np.asarray(time, float), L_surge, 'tab:blue')
-    ax[8, 0].set_title('L_surge', fontsize=10)
-    ax[8, 1].plot(np.asarray(time, float), R_surge, 'tab:blue')
-    ax[8, 1].set_title('R_surge', fontsize=10)
+    ax[6, 0].plot(np.asarray(time, float), L_surgeAcc, visible=True, color="red")
+    ax[6, 0].set_title("L_surgeAcc", fontsize=10)
+    ax[6, 1].plot(np.asarray(time, float), R_surgeAcc, "tab:orange")
+    ax[6, 1].set_title("R_surgeAcc", fontsize=10)
+    ax[7, 0].plot(np.asarray(time, float), L_surgeVel, "tab:green")
+    ax[7, 0].set_title("L_surgeVel", fontsize=10)
+    ax[7, 1].plot(np.asarray(time, float), R_surgeVel, "tab:red")
+    ax[7, 1].set_title("R_surgeVel", fontsize=10)
+    ax[8, 0].plot(np.asarray(time, float), L_surge, "tab:blue")
+    ax[8, 0].set_title("L_surge", fontsize=10)
+    ax[8, 1].plot(np.asarray(time, float), R_surge, "tab:blue")
+    ax[8, 1].set_title("R_surge", fontsize=10)
 
     # Roll
-    ax[9, 0].plot(np.asarray(time, float), -L_rollAcc, visible=True, color='red')
-    ax[9, 0].set_title('L_rollAcc', fontsize=10)
-    ax[9, 1].plot(np.asarray(time, float), R_rollAcc, 'tab:orange')
-    ax[9, 1].set_title('R_rollAcc', fontsize=10)
-    ax[10, 0].plot(np.asarray(time, float), -L_rollVel, 'tab:green')
-    ax[10, 0].set_title('L_rollVel', fontsize=10)
-    ax[10, 1].plot(np.asarray(time, float), R_rollVel, 'tab:red')
-    ax[10, 1].set_title('R_rollVel', fontsize=10)
-    ax[11, 0].plot(np.asarray(time, float), -L_roll, 'tab:blue')
-    ax[11, 0].set_title('L_roll', fontsize=10)
-    ax[11, 1].plot(np.asarray(time, float), R_roll, 'tab:blue')
-    ax[11, 1].set_title('R_roll', fontsize=10)
+    ax[9, 0].plot(np.asarray(time, float), -L_rollAcc, visible=True, color="red")
+    ax[9, 0].set_title("L_rollAcc", fontsize=10)
+    ax[9, 1].plot(np.asarray(time, float), R_rollAcc, "tab:orange")
+    ax[9, 1].set_title("R_rollAcc", fontsize=10)
+    ax[10, 0].plot(np.asarray(time, float), -L_rollVel, "tab:green")
+    ax[10, 0].set_title("L_rollVel", fontsize=10)
+    ax[10, 1].plot(np.asarray(time, float), R_rollVel, "tab:red")
+    ax[10, 1].set_title("R_rollVel", fontsize=10)
+    ax[11, 0].plot(np.asarray(time, float), -L_roll, "tab:blue")
+    ax[11, 0].set_title("L_roll", fontsize=10)
+    ax[11, 1].plot(np.asarray(time, float), R_roll, "tab:blue")
+    ax[11, 1].set_title("R_roll", fontsize=10)
 
     # Force
-    ax[12, 0].plot(np.asarray(time, float), force, 'tab:blue')
+    ax[12, 0].plot(np.asarray(time, float), force, "tab:blue")
     ax[12, 0].set_ybound(lower=-3, upper=3)
-    ax[12, 0].set_title('Force', fontsize=10)
+    ax[12, 0].set_title("Force", fontsize=10)
 
     # L motion
-    ax[13, 0].plot(np.asarray(time, float), L_motion, 'tab:blue')
+    ax[13, 0].plot(np.asarray(time, float), L_motion, "tab:blue")
     ax[13, 0].set_ybound(lower=-3, upper=3)
-    ax[13, 0].set_title('L Motion', fontsize=10)
+    ax[13, 0].set_title("L Motion", fontsize=10)
 
     # R motion
-    ax[13, 1].plot(np.asarray(time, float), R_motion, 'tab:blue')
+    ax[13, 1].plot(np.asarray(time, float), R_motion, "tab:blue")
     ax[13, 1].set_ybound(lower=-3, upper=3)
-    ax[13, 1].set_title('R Motion', fontsize=10)
+    ax[13, 1].set_title("R Motion", fontsize=10)
 
+    # ------------------------3D Plot--------------------
 
-
-    #------------------------3D Plot--------------------
-
-
-    #matplotlib inline
-
-    import matplotlib.pyplot as plt2
-    from scipy import stats as st
-    from mpl_toolkits.mplot3d import axes3d
-    # import warnings filter
-    from warnings import simplefilter
     # ignore all future warnings
-    simplefilter(action='ignore', category=FutureWarning)
+    simplefilter(action="ignore", category=FutureWarning)
     fig = plt.figure(figsize=plt.figaspect(0.5))
     # =============
     # First subplot
     # =============
     # set up the axes for the first plot
-    ax2 = fig.add_subplot(1,2,1, projection='3d')
-    ax2.set_title('Left Tool', fontsize=20)
-    xLabel = ax2.set_xlabel('X-axis', linespacing=3.2)
-    yLabel = ax2.set_ylabel('Y-axis', linespacing=3.1)
-    zLabel = ax2.set_zlabel('Z-Axis', linespacing=3.4)
+    ax2 = fig.add_subplot(1, 2, 1, projection="3d")
+    ax2.set_title("Left Tool", fontsize=20)
+    xLabel = ax2.set_xlabel("X-axis", linespacing=3.2)
+    yLabel = ax2.set_ylabel("Y-axis", linespacing=3.1)
+    zLabel = ax2.set_zlabel("Z-Axis", linespacing=3.4)
     # Data for a three-dimensional line for the left tool
 
-    '''countL0=0
+    """countL0=0
     countL1=0
 
     for elem in L_motion:
@@ -344,18 +298,38 @@ def plot_all_data():
             elem = 0
 
         for elem in L_motion:
-            elem = 0'''
+            elem = 0"""
 
-
-    yawLM = np.array([[np.cos(L_yaw), 0, np.sin(L_yaw)], [0, 1, 0], [-np.sin(L_yaw), 0, np.cos(L_yaw)]], dtype=object)
-    pitchLM = np.array([[1, 0, 0], [0, np.cos(L_pitch), -np.sin(L_pitch)], [0, np.sin(L_pitch), np.cos(L_pitch)]], dtype=object)
-    rollLM = np.array([[np.cos(L_roll), -np.sin(L_roll), 0], [np.sin(L_roll), np.cos(L_roll), 0], [0, 0, 1]], dtype=object)
+    yawLM = np.array(
+        [
+            [np.cos(L_yaw), 0, np.sin(L_yaw)],
+            [0, 1, 0],
+            [-np.sin(L_yaw), 0, np.cos(L_yaw)],
+        ],
+        dtype=object,
+    )
+    pitchLM = np.array(
+        [
+            [1, 0, 0],
+            [0, np.cos(L_pitch), -np.sin(L_pitch)],
+            [0, np.sin(L_pitch), np.cos(L_pitch)],
+        ],
+        dtype=object,
+    )
+    rollLM = np.array(
+        [
+            [np.cos(L_roll), -np.sin(L_roll), 0],
+            [np.sin(L_roll), np.cos(L_roll), 0],
+            [0, 0, 1],
+        ],
+        dtype=object,
+    )
     surgeLM = np.array([[0], [0], [-L_surge]], dtype=object)
     rotationLM = np.dot(np.dot(np.dot(pitchLM, yawLM), rollLM), surgeLM)
-    #L_toolx = np.array([[L_x], [0], [0]], dtype=object)
-    #L_tooly = np.array([[0], [L_y], [0]], dtype=object)
-    #L_toolz = np.array([[0], [0], [L_z]], dtype=object)
-    #L_tool = np.add(np.add(L_toolx, L_tooly), L_toolz)
+    # L_toolx = np.array([[L_x], [0], [0]], dtype=object)
+    # L_tooly = np.array([[0], [L_y], [0]], dtype=object)
+    # L_toolz = np.array([[0], [0], [L_z]], dtype=object)
+    # L_tool = np.add(np.add(L_toolx, L_tooly), L_toolz)
     L_tooltip = rotationLM
     vector = np.vectorize(float)
 
@@ -366,23 +340,44 @@ def plot_all_data():
     # =============
     # set up the axes for the first plot
     # set up the axes for the first plot
-    ax3 = fig.add_subplot(1, 2, 2, projection='3d')
-    ax3.set_title('Right Tool', fontsize=20)
-    xLabel = ax3.set_xlabel('X-axis', linespacing=3.2)
-    yLabel = ax3.set_ylabel('Y-axis', linespacing=3.1)
-    zLabel = ax3.set_zlabel('Z-Axis', linespacing=3.4)
+    ax3 = fig.add_subplot(1, 2, 2, projection="3d")
+    ax3.set_title("Right Tool", fontsize=20)
+    xLabel = ax3.set_xlabel("X-axis", linespacing=3.2)
+    yLabel = ax3.set_ylabel("Y-axis", linespacing=3.1)
+    zLabel = ax3.set_zlabel("Z-Axis", linespacing=3.4)
 
     # Data for a three-dimensional line for the left tool
 
-    yawRM = np.array([[np.cos(R_yaw), 0, np.sin(R_yaw)], [0, 1, 0], [-np.sin(R_yaw), 0, np.cos(R_yaw)]], dtype=object)
-    pitchRM = np.array([[1, 0, 0], [0, np.cos(R_pitch), -np.sin(R_pitch)], [0, np.sin(R_pitch), np.cos(R_pitch)]], dtype=object)
-    rollRM = np.array([[np.cos(R_roll), -np.sin(R_roll), 0], [np.sin(R_roll), np.cos(R_roll), 0], [0, 0, 1]], dtype=object)
+    yawRM = np.array(
+        [
+            [np.cos(R_yaw), 0, np.sin(R_yaw)],
+            [0, 1, 0],
+            [-np.sin(R_yaw), 0, np.cos(R_yaw)],
+        ],
+        dtype=object,
+    )
+    pitchRM = np.array(
+        [
+            [1, 0, 0],
+            [0, np.cos(R_pitch), -np.sin(R_pitch)],
+            [0, np.sin(R_pitch), np.cos(R_pitch)],
+        ],
+        dtype=object,
+    )
+    rollRM = np.array(
+        [
+            [np.cos(R_roll), -np.sin(R_roll), 0],
+            [np.sin(R_roll), np.cos(R_roll), 0],
+            [0, 0, 1],
+        ],
+        dtype=object,
+    )
     surgeRM = np.array([[0], [0], [R_surge]], dtype=object)
     rotationRM = np.dot(np.dot(np.dot(pitchRM, yawRM), rollRM), surgeRM)
-    #R_toolx = np.array([[R_x], [0], [0]], dtype=object)
-    #R_tooly = np.array([[0], [R_y], [0]], dtype=object)
-    #R_toolz = np.array([[0], [0], [R_z]], dtype=object)
-    #R_tool = np.add(np.add(R_toolx, R_tooly), R_toolz)
+    # R_toolx = np.array([[R_x], [0], [0]], dtype=object)
+    # R_tooly = np.array([[0], [R_y], [0]], dtype=object)
+    # R_toolz = np.array([[0], [0], [R_z]], dtype=object)
+    # R_tool = np.add(np.add(R_toolx, R_tooly), R_toolz)
     R_tooltip = rotationRM
     vector = np.vectorize(float)
 
@@ -397,7 +392,7 @@ def plot_all_data():
     print(np.average(L_y))
     print(np.average(L_z))"""
 
-    #print("-----")
+    # print("-----")
     """print(np.average(R_pitch)) 
     print(np.average(R_yaw))
     print(np.average(R_roll))
@@ -441,18 +436,10 @@ def plot_all_data():
     print(R_motion)
     print("")
 
-    #print(countL0)
-    #print(countL1)
-
-
-    #print(countR0)
-    #print(countR1)
-
     plt.show()
     plt2.show()
 
 
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+if __name__ == "__main__":
     plot_all_data()
-
