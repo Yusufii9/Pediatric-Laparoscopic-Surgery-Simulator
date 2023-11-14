@@ -303,10 +303,17 @@ void loop()
     /* Force sensors readings */
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     weight = scale1.get_units(2) + scale2.get_units(2) + scale3.get_units(2) + scale4.get_units(2); // grams
-    force = (weight * SCALE_CONV_FACTOR);                                                           // Newtons
+    force = (weight * SCALE_CONV_FACTOR);                                                       // Newtons
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    /* Print sensor data from Serial into .txt file */
+    /*
+    Print sensor data from Serial into .txt file
+    force = if -ve, then it is pushing force, if +ve, then it is pull force
+    L_PMW_Y / R_PMW_Y = surge
+    L_PMW_X / R_PMW_X = roll
+    L_pitch / R_pitch = pitch
+    L_yaw / R_yaw = yaw
+    */
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Serial.println(String(force) + "|" +
                    String(L_pitchAcc / 1000) + "|" + String(L_yawAcc / 1000) + "|" +
@@ -321,14 +328,10 @@ void loop()
                    String(R_pitch) + "|" + String(R_yaw) + "|" +
                    String(L_PMW_Y) + "|" + String(L_PMW_X) + "|" +
                    String(R_PMW_Y) + "|" + String(R_PMW_X) + "|" +
+                   String(xR) + "|" + String(yR) + "|" + String(zR) + "|" +
+                   String(xL) + "|" + String(yL) + "|" + String(zL) + "|" +
                    String(data1.isMotion && data1.isOnSurface) + "|" +
                    String(data2.isMotion && data2.isOnSurface));
-
-    // force = if +ve, then it is pushing down, if -ve, then it is pushing up
-    // L_PMW_Y / R_PMW_Y = surge
-    // L_PMW_X / R_PMW_X = roll
-    // L_pitch / R_pitch = pitch
-    // L_yaw / R_yaw = yaw
 
     /* Save previous values */
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
