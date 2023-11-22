@@ -65,7 +65,7 @@ void loop()
     sum = (int)(scale1.get_units() + scale2.get_units() + scale3.get_units() + scale4.get_units());
 
     // Print the value of all scales
-    Serial.println("SCLAE OUTPUT: " + String(sun) + " grams" + " SCALE FACTOR: " + String(SCALE_FACTOR));
+    Serial.println("SCLAE OUTPUT: " + String(sum) + " grams" + " SCALE FACTOR: " + String(SCALE_FACTOR));
 
     // Change scale factor while running << change by using + or - keys>>
     if (Serial.available())
