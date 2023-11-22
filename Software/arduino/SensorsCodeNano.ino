@@ -70,7 +70,11 @@ float yR = 0;
 float zR = 0;
 
 float force = 0;
-int weight = 0;
+int weight1 = 0;
+int weight2 = 0;
+int weight3 = 0;
+int weight4 = 0;
+bool allScalesNonZero;
 
 float L_pitch = 0;
 float L_yaw = 0;
@@ -302,8 +306,20 @@ void loop()
 
     /* Force sensors readings */
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    weight = scale1.get_units(2) + scale2.get_units(2) + scale3.get_units(2) + scale4.get_units(2); // grams
-    force = (weight * SCALE_CONV_FACTOR);                                                       // Newtons
+    // Force sensors readings (grams)
+    weight1 = scale1.get_units();
+    weight2 = scale2.get_units();
+    weight3 = scale3.get_units();
+    weight4 = scale4.get_units();
+    
+    // Check if all scales are non-zero
+    allScalesNonZero = (weight1 != 0) && (weight2 != 0) && (weight3 != 0) && (weight4 != 0);
+
+    // Stability check: If any one scale is zero while others are not, ignore the readings
+    if (allScalesNonZero) {
+      // Calculate force in Newtons
+      force = ((weight1 + weight2 + weight3 + weight4) * SCALE_CONV_FACTOR);
+    } else { force = 0;}
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     /*
