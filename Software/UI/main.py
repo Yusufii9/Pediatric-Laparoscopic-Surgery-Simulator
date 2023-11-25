@@ -36,6 +36,8 @@ class Application(tk.Tk):
         self.shadow_color = 'grey'
         self.welcome_text = self.canvas.create_text(800, 300, text='Welcome', font=('Courier', 100), fill='white', tags=("overlay", "text",))
         self.current_user = None
+        self.back_button = None
+        self.buttons = []
         self.base_directory = 'C:/Users/hudaa/PycharmProjects/pythonProject1/UserData'
         self.load_video()
         self.start_menu()
@@ -133,6 +135,10 @@ class Application(tk.Tk):
         self.canvas.tag_raise("overlay")
 
     def start_menu(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Welcome', font=('Courier', 100))
         self.add_button('Close', self.destroy, 500)
         self.add_button('Start', self.user_window, 450)
@@ -146,10 +152,35 @@ class Application(tk.Tk):
                            activeforeground='black', highlightthickness=2,
                            highlightbackground='#05d7ff', highlightcolor='white',
                            border=0, cursor='hand1', font=('Arial', 8, 'bold'))
-        self.canvas.create_window(750, y_position, anchor='nw', window=button,tags=("overlay",))
+        button_canvas = self.canvas.create_window(750, y_position, anchor='nw', window=button,tags=("overlay",))
+        # Add the button and its canvas item ID to the list
+        self.buttons.append((button, button_canvas))
+
+    def remove_buttons(self):
+        # Iterate through the buttons and destroy them
+        for button, button_canvas in self.buttons:
+            button.destroy()
+            self.canvas.delete(button_canvas)
+
+        # Clear the list of buttons
+        self.buttons = []
+
+    def add_back_button(self, text, command):
+        button = tk.Button(self, text=text, command=command, anchor='center',
+                           width=50, height=2, activebackground='#65e7ff',
+                           background='#05d7ff', foreground='black',
+                           activeforeground='black', highlightthickness=2,
+                           highlightbackground='#05d7ff', highlightcolor='white',
+                           border=0, cursor='hand1', font=('Arial', 8, 'bold'))
+        self.canvas.create_window(0, 0, anchor='nw', window=button,tags=("overlay",))
+        return button
 
 
     def test_train_window(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
         # Create text on the canvas for the welcome message and simulator name
         self.canvas.itemconfig(self.welcome_text, text='Task Menu')
 
@@ -168,17 +199,28 @@ class Application(tk.Tk):
             )
             self.title('Video Application (Guest User)')
 
-        self.add_button('Feedback', self.feedback_menu, 550)
+        self.add_button('Feedback', self.show_feedback_popup, 550)
         self.add_button('Examination', self.task_menu, 500)
         self.add_button('Training', self.task_menu, 450)
 
+
+
     def task_menu(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Task Menu', font=('Courier', 80))
         self.add_button('Loop', self.destroy, 550)
         self.add_button('Suturing', self.destroy, 500)
         self.add_button('Peg Transfer', self.GUI_launch, 450)
+        self.back_button = self.add_back_button('Back', self.test_train_window)
 
     def user_window(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Login Menu', font=('Courier', 80))
         self.add_button('Guest User', self.test_train_window, 500)
         self.add_button('Login/Register', self.login_window, 450)
@@ -201,10 +243,54 @@ class Application(tk.Tk):
         self.test_train_window()
 
     def feedback_menu(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Feedback Menu', font=('Courier', 80))
         self.add_button('History', self.destroy, 550)
         self.add_button('Video Playback', self.destroy, 500)
-        self.add_button('Feedback', self.destroy, 450)
+        self.add_button('Evaluation', self.evaluation_menu, 450)
+        self.add_button('Process Data', self.feedback_menu, 600)
+        self.back_button = self.add_back_button('Back', self.test_train_window)
+
+    # Function to show the pop-up window
+    def show_feedback_popup(self):
+        messagebox.showinfo("Reminder", "Click 'Process Data' before evaluating")
+        self.feedback_menu()
+
+    def evaluation_menu(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
+        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
+        self.add_button('Loop', self.destroy, 550)
+        self.add_button('Suturing', self.destroy, 500)
+        self.add_button('Peg Transfer', self.peg_evaluation_sub_menu, 450)
+        self.back_button = self.back_button = self.add_back_button('Back', self.feedback_menu)
+
+    def peg_evaluation_sub_menu(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
+        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
+        self.add_button('Tool Trajectory', self.destroy, 550)
+        self.add_button('Visual Feedback', self.peg_sub_task, 500)
+        self.add_button('Video Feedback', self.peg_sub_task, 450)
+        self.back_button = self.add_back_button('Back', self.evaluation_menu)
+
+    def peg_sub_task(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
+        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
+        self.add_button('Subtask 3', self.destroy, 550)
+        self.add_button('Subtask 2', self.destroy, 500)
+        self.add_button('Subtask 1', self.destroy, 450)
+        self.back_button = self.add_back_button('Back', self.peg_evaluation_sub_menu)
 
     def GUI_launch(self):
         peg_task = GUI(cameraID, font, windowName, displayWidth, displayHeight, red_low, red_high, green_low, green_high, blue_low, blue_high, on_GUI_close=self.on_GUI_close)
@@ -809,7 +895,7 @@ class GUI(object):
 
                         #Place a timer on screen for task duration
                         cv2.putText(frame, str(round(time.time() - self.task_start, 2)), (600, 35), self.font, 1, (255, 215, 5), 2)
-                       # self.out.write(frame)
+                        self.out.write(frame)
                         cv2.imshow(self.windowName, frame)
 
                 elif self.image_state == 2:
