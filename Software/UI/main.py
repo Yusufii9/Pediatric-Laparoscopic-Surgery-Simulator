@@ -1,15 +1,22 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 
 import cv2
 import imageio
 from PIL import Image, ImageTk
+import pandas as pd
 import os
 import numpy as np
 import time
 import serial
 #import matplotlib.pyplot as plt
 #from matplotlib.widgets import Slider, CheckButtons
+from cleaning_sensor_data import SensorDataCleaner
+from seg_data_to_subtasks import DataSegmentation
+from user_task1_evaluation import Task1PerformanceAnalyzer
+from plot_user_aligned_subtasks import DataPlotter
+from aaa import VideoPlayer
+
 
 class Application(tk.Tk):
     def __init__(self):
@@ -151,7 +158,7 @@ class Application(tk.Tk):
                            background='#05d7ff', foreground='black',
                            activeforeground='black', highlightthickness=2,
                            highlightbackground='#05d7ff', highlightcolor='white',
-                           border=0, cursor='hand1', font=('Arial', 8, 'bold'))
+                           border=0, cursor='hand1', font=('Arial', 8, 'bold'), relief='raised')
         button_canvas = self.canvas.create_window(750, y_position, anchor='nw', window=button,tags=("overlay",))
         # Add the button and its canvas item ID to the list
         self.buttons.append((button, button_canvas))
@@ -242,21 +249,38 @@ class Application(tk.Tk):
     def on_GUI_close(self):
         self.test_train_window()
 
+    def run_data_processing(self):
+        try:
+            cleaner = SensorDataCleaner()
+            cleaner.clean_sensor_data()
+            processor = DataSegmentation()
+            processor.run()
+            messagebox.showinfo("Success", "Data processing completed successfully.")
+
+            self.grab_set()
+            self.analysis = Task1PerformanceAnalyzer('Video10_Reference_Seg1.csv', 'Video9_user_Seg1.csv',
+                                                     'Video10.mp4', 'Video9.mp4')
+            self.aligned_data = self.analysis.align_data()
+            self.analysis.normalize_and_process_windows()
+            self.analysis.process_videos()
+        except Exception as e:
+            messagebox.showerror("Error", f"An error occurred: {e}")
+
     def feedback_menu(self):
         self.remove_buttons()
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Feedback Menu', font=('Courier', 80))
-        self.add_button('History', self.destroy, 550)
-        self.add_button('Video Playback', self.destroy, 500)
-        self.add_button('Evaluation', self.evaluation_menu, 450)
-        self.add_button('Process Data', self.feedback_menu, 600)
+        self.add_button('History', self.destroy, 600)
+        self.add_button('Video Playback', self.destroy, 550)
+        self.add_button('Evaluation', self.evaluation_menu, 500)
+        self.add_button('Process Data', self.run_data_processing, 450)
         self.back_button = self.add_back_button('Back', self.test_train_window)
 
     # Function to show the pop-up window
     def show_feedback_popup(self):
-        messagebox.showinfo("Reminder", "Click 'Process Data' before evaluating")
+        messagebox.showinfo("Reminder", "Click 'Process Data' button before evaluating")
         self.feedback_menu()
 
     def evaluation_menu(self):
@@ -277,11 +301,16 @@ class Application(tk.Tk):
             self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
         self.add_button('Tool Trajectory', self.destroy, 550)
-        self.add_button('Visual Feedback', self.peg_sub_task, 500)
-        self.add_button('Video Feedback', self.peg_sub_task, 450)
+        self.add_button('Visual Feedback', self.peg_sub_task_visual, 500)
+        self.add_button('Video Feedback', self.peg_sub_task_video, 450)
         self.back_button = self.add_back_button('Back', self.evaluation_menu)
 
-    def peg_sub_task(self):
+    def video_test(self):
+        video_path = "test_task1.mp4"
+        player = VideoPlayer(video_path)
+        player.play_video()
+
+    def peg_sub_task_video(self):
         self.remove_buttons()
         if self.back_button is not None:
             self.back_button.destroy()
@@ -289,10 +318,33 @@ class Application(tk.Tk):
         self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
         self.add_button('Subtask 3', self.destroy, 550)
         self.add_button('Subtask 2', self.destroy, 500)
-        self.add_button('Subtask 1', self.destroy, 450)
+        self.add_button('Subtask 1', self.video_test, 450)
+        self.back_button = self.add_back_button('Back', self.peg_evaluation_sub_menu)
+
+    def visual_test(self):
+
+        root = tk.Tk()
+        root.withdraw()
+        csv_file = filedialog.askopenfilename(title="Select the CSV Data File")
+        root.destroy()
+
+        plotter = DataPlotter()
+        plotter.load_data(csv_file)
+        plotter.plot_data()
+
+    def peg_sub_task_visual(self):
+        self.remove_buttons()
+        if self.back_button is not None:
+            self.back_button.destroy()
+            self.back_button = None  # Set back_button to None after destroying
+        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
+        self.add_button('Subtask 3', self.destroy, 550)
+        self.add_button('Subtask 2', self.destroy, 500)
+        self.add_button('Subtask 1', self.visual_test, 450)
         self.back_button = self.add_back_button('Back', self.peg_evaluation_sub_menu)
 
     def GUI_launch(self):
+        self.grab_set()
         peg_task = GUI(cameraID, font, windowName, displayWidth, displayHeight, red_low, red_high, green_low, green_high, blue_low, blue_high, on_GUI_close=self.on_GUI_close)
 
 
@@ -445,7 +497,7 @@ class GUI(object):
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.displayHeight)
 
         # Use this when using direct show setting, otherwise it slows down the startup
-        self.cap.set(cv2.CAP_PROP_FPS, 30)
+        self.cap.set(cv2.CAP_PROP_FPS, 15)
         print(self.cap.get(cv2.CAP_PROP_FPS))
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
@@ -480,7 +532,7 @@ class GUI(object):
         '''
         self.warn_thresholds = [1, 1, 1, 1, 1, 0.5, 0.1, 0.5, 0.1]
 
-        self.startup_counter = 16   # Counter variable for sensor startup countdown at program start
+        self.startup_counter = 16  # Counter variable for sensor startup countdown at program start
 
         cv2.namedWindow(self.windowName)
 
@@ -854,8 +906,8 @@ class GUI(object):
                         else:
                             lower_bound = np.array([255, 255, 255])
                             upper_bound = np.array([255, 255, 255])
-                            #self.file.close()
-                            self.image_state = 0
+                            self.file.close()
+                            quit_program(self)
                             return
 
                         myMask = cv2.inRange(frameHSV, lower_bound, upper_bound)
@@ -864,8 +916,6 @@ class GUI(object):
 
                         def back(*args):
                             pass
-                        cv2.putText(frame, "Ring Task", (25, 35), self.font, 1, (255, 215, 5), 2)
-                        cv2.putText(frame, "Main Menu", (1100, 35), self.font, 1, (255, 215, 5), 2)
 
 
                         contour_count = 0
@@ -883,6 +933,7 @@ class GUI(object):
 
                         # Write sensor data to file with time since task start in seconds
                         self.file.write(str(time.time() - self.task_start) + "|" + stuff_string.rstrip() + '\n')
+                        print(str(time.time() - self.task_start) + "|" + stuff_string.rstrip()+ '\n')
 
                         check_sensor_warnings(self, frame, stuff_string.rstrip(), self.warn_thresholds[0]) # Sending force threshold here incase we want to change depending on task
 
@@ -906,13 +957,11 @@ class GUI(object):
                     cv2.putText(frame, "Suturing Task", (25, 35), self.font, 1, (0, 255, 0), 2)
                     cv2.putText(frame, "Main Menu", (1100, 35), self.font, 1, (255, 215, 5), 2)
 
-                    print("WHY")
-
                     # Read sensor data
                     stuff = self.ser.readline()
                     stuff_string = stuff.decode()
 
-                    # Write sensor data to file with time since task start in seconds
+                    # Write sensor data to file with time since 5task start in seconds
                     self.file.write(str(time.time() - self.task_start) + "|" + stuff_string.rstrip() + '\n')
 
                     check_sensor_warnings(self,frame, stuff_string.rstrip(), self.warn_thresholds[0]) # Sending force threshold here incase we want to change depending on task
@@ -952,19 +1001,45 @@ class GUI(object):
                     cv2.putText(self.main_menu, "Quit", (25, 685), self.font, 1, (255, 215, 5), 2)
                     cv2.imshow(self.windowName, self.main_menu)
                 elif self.image_state == 5:
-                    self.startup_screen = np.zeros([self.displayHeight, self.displayWidth, 3], np.uint8) # Clear text from window
-                    cv2.putText(self.startup_screen, "Starting sensors, please wait " + str(self.startup_counter) + " seconds...", (320, 360), self.font, 1,(255, 215, 5), 2)
-                    cv2.imshow(self.windowName, self.startup_screen)
-                    key = cv2.waitKey(1000)
+                   # Load an image
+                    image_path = 'pegtask.png'
+                    startup_image = cv2.imread(image_path)
+
+                    # Check if the image needs resizing to fit the display window
+                    if startup_image.shape[0] != self.displayHeight or startup_image.shape[1] != self.displayWidth:
+                        startup_image = cv2.resize(startup_image, (self.displayWidth, self.displayHeight))
+
+                    # Create/Open the OpenCV window
+                    cv2.namedWindow(self.windowName)
+
+                    self.out = cv2.VideoWriter('outpy.avi', cv2.VideoWriter_fourcc(*'MJPG'), 15, (self.displayWidth, self.displayHeight))
                     self.startup_counter -= 1
-                    if(self.startup_counter < 0):
-                        self.out = cv2.VideoWriter('outpy.avi', cv2.VideoWriter_fourcc(*'MJPG'), 30, (self.displayWidth, self.displayHeight))
-                        self.image_state = 1
-                        self.task_state = 1
-                        self.ser.flushInput()
-                        self.timer = time.time()
-                        self.task_start = time.time()
-                        self.file = open("sensor_data.txt", "w")
+
+                    while self.startup_counter >= 0:
+                        # Create a copy of the image to work with
+                        image_with_text = startup_image.copy()
+
+                        # Add countdown timer text to the image copy
+                        countdown_text = "Begin in " + str(self.startup_counter) + " seconds..."
+                        cv2.putText(image_with_text, countdown_text, (860, 650), self.font, 1, (0, 0, 0))
+
+                        # Display the updated image
+                        cv2.imshow(self.windowName, image_with_text)
+
+                        # Wait for a short time (e.g., 1000 milliseconds) to update the display
+                        key = cv2.waitKey(1000)
+
+                        # Decrement the counter
+                        self.startup_counter -= 1
+
+                    # Perform other tasks after the countdown
+                    self.image_state = 1
+                    self.task_state = 1
+                    self.ser.flushInput()
+                    self.timer = time.time()
+                    self.task_start = time.time()
+                    self.file = open("sensor_data.txt", "w")
+
 
 
             '''
