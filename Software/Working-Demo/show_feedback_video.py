@@ -12,13 +12,13 @@ class VideoPlayer:
             if not self.paused:
                 ret, frame = self.cap.read()
                 if not ret:
-                    break  # End of video
+                    break 
                 cv2.imshow('Video', frame)
 
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('q'):  # Quit
+            if key == ord('q'):
                 break
-            elif key == ord('p'):  # Pause
+            elif key == ord('p'):
                 self.paused = not self.paused
 
         self.cap.release()
