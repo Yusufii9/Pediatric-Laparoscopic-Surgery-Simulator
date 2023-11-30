@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, filedialog
+from tkinter import messagebox, filedialog, Toplevel
 
 import cv2
 import imageio
@@ -9,6 +9,7 @@ import os
 import numpy as np
 import time
 import serial
+import threading
 #import matplotlib.pyplot as plt
 #from matplotlib.widgets import Slider, CheckButtons
 from cleaning_sensor_data import SensorDataCleaner
@@ -16,6 +17,9 @@ from seg_data_to_subtasks import DataSegmentation
 from user_task1_evaluation import Task1PerformanceAnalyzer
 from plot_user_aligned_subtasks import DataPlotter
 from show_feedback_video import VideoPlayer
+from itertools import cycle
+from video_feedback_task1 import VideoPlayFeedback
+from video_playback import VideoPlayback
 
 
 class Application(tk.Tk):
@@ -31,21 +35,25 @@ class Application(tk.Tk):
         self.geometry(f'{self.screen_width}x{self.screen_height}')
         self.resizable(False, False)
         self.configure(bg='black')
-        self.video_name = "LapSim.mkv"
+        self.video_name = "LapSim1.mkv"
         self.video = imageio.get_reader(self.video_name)
         self.canvas = tk.Canvas(self, width=self.screen_width, height=self.screen_height)
         self.bind('<ButtonPress-1>', self.mouse_down)
         self.bind('<ButtonRelease-1>', self.mouse_up)
         self.bind('<B1-Motion>', self.mouse_drag)
         # First, create the shadow with an offset (e.g., 2 pixels to the right and down)
-        self.shadow_offset_x = 2
-        self.shadow_offset_y = 2
-        self.shadow_color = 'grey'
-        self.welcome_text = self.canvas.create_text(self.screen_width/2, self.screen_height/3, text='Welcome', font=('Courier', 100), fill='white', tags=("overlay", "text",))
+        self.shadow_offset_x = 3
+        self.shadow_offset_y = 3
+        self.shadow_color = 'black'
+        self.welcome_text = self.canvas.create_text(self.screen_width/2, self.screen_height/3 + 50, text='Welcome', font=('MS Sans Serif', 100), fill='black', tags=("overlay", "text",))
+        #self.welcome_shadow = self.canvas.create_text(self.screen_width/2 + self.shadow_offset_x, self.screen_height/3 + self.shadow_offset_y,text="Welcome",font=('MS Sans Serif', 100), fill=self.shadow_color, tags=("shadow",))
+        #self.rect = self.canvas.create_rectangle(self.screen_width/2 + 400, 700, self.screen_height/3 + 100, 100, fill="black")
         self.current_user = None
         self.back_button = None
         self.buttons = []
         self.base_directory = 'C:/Users/hudaa/PycharmProjects/pythonProject1/UserData'
+        # Initialize the cycle of images
+        self.image_paths = ["Slide2.png", "Slide3.png", "Slide4.png", "Slide5.png", "Slide6.png", "Slide7.png", "Slide8.png", "Slide9.png"]
         self.load_video()
         self.start_menu()
         self.canvas.pack()
@@ -123,18 +131,18 @@ class Application(tk.Tk):
         frame_iterator = iter(self.video.iter_data())
         self.update_frame(frame_iterator)
 
-        #self.canvas.create_text(800 + self.shadow_offset_x, 400 + self.shadow_offset_y,text="Pediatric Laparoscopic Surgical Simulator",font=('Courier', 18), fill=self.shadow_color, tags=("shadow",))
+        #self.canvas.create_text(self.screen_width/3 + 20 + self.shadow_offset_x, (self.screen_height/4 - 20) + self.shadow_offset_y,text="Pediatric Laparoscopic Surgical Simulator",font=('Helvetica', 16), fill=self.shadow_color, tags=("shadow",))
         self.canvas.create_text(
-            self.screen_width/2, self.screen_height/3 + 70,
+            self.screen_width/3 + 20, self.screen_height/4 - 20,
             text="Pediatric Laparoscopic Surgical Simulator",
-            font=('Courier', 18), fill='white', tags=("overlay",)
+            font=('MS Sans Serif', 20), fill='black', tags=("overlay",)
         )
 
         if (self.current_user != None):
             self.canvas.create_text(
                 800, 300,
                 text="Welcome "+str(self.current_user),
-                font=('Courier', 18), fill='white', tags=("overlay",)
+                font=('MS Sans Serif', 18), fill='white', tags=("overlay",)
             )
 
     def raise_buttons_and_text(self):
@@ -146,20 +154,21 @@ class Application(tk.Tk):
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Welcome', font=('Courier', 100))
-        self.add_button('Close', self.destroy, 500)
-        self.add_button('Start', self.user_window, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Welcome', font=('MS Sans Serif', 100))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Welcome', font=('MS Sans Serif', 100))
+        self.add_button('Close', self.destroy, (self.screen_height/3 + 200))
+        self.add_button('Start', self.user_window, (self.screen_height/3 + 150))
         self.canvas.tag_raise('overlay')
         self.canvas.update_idletasks()
 
     def add_button(self, text, command, y_position):
         button = tk.Button(self, text=text, command=command, anchor='center',
-                           width=13, height=2, activebackground='#65e7ff',
+                           width=20, height=2, activebackground='#65e7ff',
                            background='#05d7ff', foreground='black',
                            activeforeground='black', highlightthickness=2,
                            highlightbackground='#05d7ff', highlightcolor='white',
-                           border=0, cursor='hand1', font=('Arial', 8, 'bold'), relief='raised')
-        button_canvas = self.canvas.create_window(self.screen_width/2, y_position, anchor='nw', window=button,tags=("overlay",))
+                           border=0, cursor='hand1', font=('MS Sans Serif', 8, 'bold'), relief='raised')
+        button_canvas = self.canvas.create_window(self.screen_width/2 - 30, y_position, anchor='nw', window=button,tags=("overlay",))
         # Add the button and its canvas item ID to the list
         self.buttons.append((button, button_canvas))
 
@@ -178,7 +187,7 @@ class Application(tk.Tk):
                            background='#05d7ff', foreground='black',
                            activeforeground='black', highlightthickness=2,
                            highlightbackground='#05d7ff', highlightcolor='white',
-                           border=0, cursor='hand1', font=('Arial', 8, 'bold'))
+                           border=0, cursor='hand1', font=('MS Sans Serif', 8, 'bold'))
         self.canvas.create_window(0, 0, anchor='nw', window=button,tags=("overlay",))
         return button
 
@@ -190,25 +199,28 @@ class Application(tk.Tk):
             self.back_button = None  # Set back_button to None after destroying
         # Create text on the canvas for the welcome message and simulator name
         self.canvas.itemconfig(self.welcome_text, text='Task Menu')
+        #self.canvas.itemconfig(self.welcome_shadow, text='Task Menu', font=('MS Sans Serif', 80))
 
         if (self.current_user != None):
             self.canvas.create_text(
-                800, 650,
+                self.screen_width/2 + 20, self.screen_height-200,
                 text="Welcome "+str(self.current_user),
-                font=('Courier', 18), fill='white', tags=("overlay",)
+                font=('MS Sans Serif', 18), fill='white', tags=("overlay",)
             )
+            self.canvas.create_text((self.screen_width/2 + 20) + self.shadow_offset_x, self.screen_height - 200 + self.shadow_offset_y,text="Welcome "+str(self.current_user),font=('MS Sans Serif', 18), fill=self.shadow_color, tags=("shadow",))
             self.title('Video Application (User Logged In: '+str(self.current_user)+')')
         else:
             self.canvas.create_text(
-                800, 650,
+                self.screen_width/2 + 30, self.screen_height-200,
                 text="Welcome Guest",
-                font=('Courier', 18), fill='white', tags=("overlay",)
+                font=('MS Sans Serif', 24), fill='black', tags=("overlay",)
             )
+            #self.canvas.create_text((self.screen_width/2 + 20) + self.shadow_offset_x, self.screen_height - 200 + self.shadow_offset_y,text="Welcome Guest",font=('MS Sans Serif', 18), fill=self.shadow_color, tags=("shadow",))
             self.title('Video Application (Guest User)')
 
-        self.add_button('Feedback', self.show_feedback_popup, 550)
-        self.add_button('Examination', self.task_menu, 500)
-        self.add_button('Training', self.task_menu, 450)
+        self.add_button('Feedback', self.show_feedback_popup, (self.screen_height/3 + 250))
+        self.add_button('Examination', self.task_menu, (self.screen_height/3 + 200))
+        self.add_button('Training', self.task_menu, (self.screen_height/3 + 150))
 
 
 
@@ -217,10 +229,11 @@ class Application(tk.Tk):
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Task Menu', font=('Courier', 80))
-        self.add_button('Loop', self.destroy, 550)
-        self.add_button('Suturing', self.destroy, 500)
-        self.add_button('Peg Transfer', self.GUI_launch, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Task Menu', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Task Menu', font=('MS Sans Serif', 80))
+        self.add_button('Loop', self.destroy, (self.screen_height/3 + 250))
+        self.add_button('Suturing', self.destroy, (self.screen_height/3 + 200))
+        self.add_button('Peg Transfer', self.GUI_launch, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.test_train_window)
 
     def user_window(self):
@@ -228,9 +241,10 @@ class Application(tk.Tk):
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Login Menu', font=('Courier', 80))
-        self.add_button('Guest User', self.test_train_window, 500)
-        self.add_button('Login/Register', self.login_window, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Login Menu', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Login Menu', font=('MS Sans Serif', 80))
+        self.add_button('Guest User', self.test_train_window, (self.screen_height/3 + 200))
+        self.add_button('Login/Register', self.login_window, (self.screen_height/3 + 150))
 
     def on_user_logged_in(self):
         # Code to run when user is logged in
@@ -250,6 +264,37 @@ class Application(tk.Tk):
         self.test_train_window()
 
     def run_data_processing(self):
+        self.current_image_index = 0
+
+        # Function to update the image displayed in the top-level window
+        def update_image():
+            self.current_image_index = (self.current_image_index + 1) % len(self.image_paths)
+
+            try:
+                photo = tk.PhotoImage(file=self.image_paths[self.current_image_index])
+                image_label.config(image=photo)
+                image_label.image = photo
+            except Exception as e:
+                print(f"Failed to load image: {self.image_paths[self.current_image_index]} - Error: {e}")
+
+            new_window.after(5000, update_image)
+
+        def close_new_window():
+                new_window.destroy()
+                self.deiconify()
+
+        def background_task():
+            try:
+                self.analysis = Task1PerformanceAnalyzer('Demo_Reference_Seg1.csv', 'Demo_user_Seg1.csv', 'Atallah.mp4',
+                                                         'Youssef.mp4')
+                self.aligned_data = self.analysis.align_data()
+                self.analysis.normalize_and_process_windows()
+                self.analysis.process_videos()
+            except Exception as e:
+                messagebox.showerror("Error", f"An error occurred: {e}")
+            finally:
+                # Use after method to safely close the window from the main thread
+                new_window.after(0, close_new_window)
         try:
             cleaner = SensorDataCleaner()
             cleaner.clean_sensor_data()
@@ -257,25 +302,43 @@ class Application(tk.Tk):
             processor.run()
             messagebox.showinfo("Success", "Data processing completed successfully.")
 
-            self.grab_set()
-            self.analysis = Task1PerformanceAnalyzer('Video10_Reference_Seg1.csv', 'Video9_user_Seg1.csv',
-                                                     'Video10.mp4', 'Video9.mp4')
-            self.aligned_data = self.analysis.align_data()
-            self.analysis.normalize_and_process_windows()
-            self.analysis.process_videos()
+            # Create a new window
+            new_window = tk.Toplevel(self)
+            new_window.title("Processing Video...")
+            new_window.grab_set()
+            self.withdraw()  # Show the window
+
+            self.current_image_index = 0  # Start with the first image
+
+            # Set up the initial image
+            initial_photo = tk.PhotoImage(file=self.image_paths[self.current_image_index])
+            image_label = tk.Label(new_window, image=initial_photo)
+            image_label.pack()
+
+            # Start the cycle of image updates
+            update_image()
+
+            # Start the background task in a separate thread
+            background_thread = threading.Thread(target=background_task, daemon=True)
+            background_thread.start()
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
+
+    def video_playback(self):
+        video_window = tk.Toplevel()
+        VideoPlayback(video_window)
 
     def feedback_menu(self):
         self.remove_buttons()
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Feedback Menu', font=('Courier', 80))
-        self.add_button('History', self.destroy, 600)
-        self.add_button('Video Playback', self.destroy, 550)
-        self.add_button('Evaluation', self.evaluation_menu, 500)
-        self.add_button('Process Data', self.run_data_processing, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Feedback Menu', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Feedback Menu', font=('MS Sans Serif', 80))
+        self.add_button('History', self.destroy, (self.screen_height/3 + 300))
+        self.add_button('Video Playback', self.video_playback, (self.screen_height/3 + 250))
+        self.add_button('Evaluation', self.evaluation_menu, (self.screen_height/3 + 200))
+        self.add_button('Process Data', self.run_data_processing, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.test_train_window)
 
     # Function to show the pop-up window
@@ -288,10 +351,11 @@ class Application(tk.Tk):
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
-        self.add_button('Loop', self.destroy, 550)
-        self.add_button('Suturing', self.destroy, 500)
-        self.add_button('Peg Transfer', self.peg_evaluation_sub_menu, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Evaluation Menu', font=('MS Sans Serif', 80))
+        self.add_button('Loop', self.destroy, (self.screen_height/3 + 250))
+        self.add_button('Suturing', self.destroy, (self.screen_height/3 + 200))
+        self.add_button('Peg Transfer', self.peg_evaluation_sub_menu, (self.screen_height/3 + 150))
         self.back_button = self.back_button = self.add_back_button('Back', self.feedback_menu)
 
     def peg_evaluation_sub_menu(self):
@@ -299,30 +363,30 @@ class Application(tk.Tk):
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
-        self.add_button('Tool Trajectory', self.destroy, 550)
-        self.add_button('Visual Feedback', self.peg_sub_task_visual, 500)
-        self.add_button('Video Feedback', self.peg_sub_task_video, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Evaluation Menu', font=('MS Sans Serif', 80))
+        self.add_button('Tool Trajectory', self.destroy, (self.screen_height/3 + 250))
+        self.add_button('Visual Feedback', self.peg_sub_task_visual, (self.screen_height/3 + 200))
+        self.add_button('Video Feedback', self.peg_sub_task_video, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.evaluation_menu)
 
-    def video_test(self):
-        video_path = "test_task1.mp4"
-        player = VideoPlayer(video_path)
-        player.play_video()
+    def video_feedback(self):
+        video_window = tk.Toplevel()
+        VideoPlayFeedback(video_window)
 
     def peg_sub_task_video(self):
         self.remove_buttons()
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
-        self.add_button('Subtask 3', self.destroy, 550)
-        self.add_button('Subtask 2', self.destroy, 500)
-        self.add_button('Subtask 1', self.video_test, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Video Feedback', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Video Feedback', font=('MS Sans Serif', 80))
+        self.add_button('Subtask 3', self.destroy, (self.screen_height/3 + 250))
+        self.add_button('Subtask 2', self.destroy, (self.screen_height/3 + 200))
+        self.add_button('Subtask 1', self.video_feedback, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.peg_evaluation_sub_menu)
 
     def visual_test(self):
-
         root = tk.Tk()
         root.withdraw()
         csv_file = filedialog.askopenfilename(title="Select the CSV Data File")
@@ -337,15 +401,16 @@ class Application(tk.Tk):
         if self.back_button is not None:
             self.back_button.destroy()
             self.back_button = None  # Set back_button to None after destroying
-        self.canvas.itemconfig(self.welcome_text, text='Evaluation Menu', font=('Courier', 80))
-        self.add_button('Subtask 3', self.destroy, 550)
-        self.add_button('Subtask 2', self.destroy, 500)
-        self.add_button('Subtask 1', self.visual_test, 450)
+        self.canvas.itemconfig(self.welcome_text, text='Visual Feedback', font=('MS Sans Serif', 80))
+        #self.canvas.itemconfig(self.welcome_shadow, text='Visual Menu', font=('MS Sans Serif', 80))
+        self.add_button('Subtask 3', self.destroy, (self.screen_height/3 + 250))
+        self.add_button('Subtask 2', self.destroy, (self.screen_height/3 + 200))
+        self.add_button('Subtask 1', self.visual_test, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.peg_evaluation_sub_menu)
 
     def GUI_launch(self):
         self.grab_set()
-        peg_task = GUI(cameraID, font, windowName, self.screen_width, self.screen_height, red_low, red_high, green_low, green_high, blue_low, blue_high, on_GUI_close=self.on_GUI_close)
+        peg_task = GUI(cameraID, font, windowName, self.winfo_screenwidth(), self.winfo_screenheight(), red_low, red_high, green_low, green_high, blue_low, blue_high, on_GUI_close=self.on_GUI_close)
 
 
 class LoginRegister(tk.Toplevel):
@@ -578,23 +643,23 @@ class GUI(object):
                 cur_time = time.time()
 
                 if cur_time - self.warning_time[0] < 1:
-                    cv2.putText(frame, "Too much force!", (int(self.displayWidth/2), 700), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Too much force!", (int(self.displayWidth/2 - 80), 700), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[1] < 1:
-                    cv2.putText(frame, "Slow left pitch acc.", (0, 650), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow left pitch acc.", (0, self.displayHeight - 450), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[2] < 1:
-                    cv2.putText(frame, "Slow left yaw acc.", (0, 700), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow left yaw acc.", (0, self.displayHeight - 500), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[3] < 1:
-                    cv2.putText(frame, "Slow right pitch acc.", (900, 650), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow right pitch acc.", (self.displayWidth - 400, self.displayHeight - 450), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[4] < 1:
-                    cv2.putText(frame, "Slow right yaw acc.", (925, 700), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow right yaw acc.", (self.displayWidth - 400, self.displayHeight - 500), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[5] < 1:
-                    cv2.putText(frame, "Slow left surge acc.", (0, 600), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow left surge acc.", (0, self.displayHeight - 400), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[6] < 1:
-                    cv2.putText(frame, "Slow left rotation acc.", (0, 550), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow left rotation acc.", (0, self.displayHeight - 350), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[7] < 1:
-                    cv2.putText(frame, "Slow right surge acc.", (900, 600), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow right surge acc.", (self.displayWidth - 400, self.displayHeight - 400), self.font, 1, (255, 215, 5), 2)
                 if cur_time - self.warning_time[8] < 1:
-                    cv2.putText(frame, "Slow right rotation acc.", (900, 550), self.font, 1, (255, 215, 5), 2)
+                    cv2.putText(frame, "Slow right rotation acc.", (self.displayWidth - 400, self.displayHeight - 350), self.font, 1, (255, 215, 5), 2)
 
             '''
             Check sensor data for any possible bad movements throughout a task
@@ -886,6 +951,8 @@ class GUI(object):
                 if self.image_state == 1:
                     # Get latest video frame
                     ret, frame = self.cap.read()
+                    if ret:
+                        frame = cv2.resize(frame, (self.displayWidth, self.displayHeight))
 
                     # Only write/show a frame if there was a new capture
                     if ret == True:
@@ -907,7 +974,7 @@ class GUI(object):
                             lower_bound = np.array([255, 255, 255])
                             upper_bound = np.array([255, 255, 255])
                             self.file.close()
-                            quit_program(self)
+                            #quit_program(self)
                             return
 
                         myMask = cv2.inRange(frameHSV, lower_bound, upper_bound)
@@ -1021,13 +1088,17 @@ class GUI(object):
 
                         # Add countdown timer text to the image copy
                         countdown_text = str(self.startup_counter)
-                        cv2.putText(image_with_text, countdown_text, (950, 650), self.font, 1, (0, 0, 0))
+                        cv2.putText(image_with_text, countdown_text, (self.displayWidth - 200, self.displayHeight - 100), self.font, 1, (0, 0, 0))
 
                         # Display the updated image
                         cv2.imshow(self.windowName, image_with_text)
 
                         # Wait for a short time (e.g., 1000 milliseconds) to update the display
                         key = cv2.waitKey(1000)
+
+                        # Check if the window is closed
+                        if cv2.getWindowProperty(self.windowName, cv2.WND_PROP_VISIBLE) < 1:
+                            break
 
                         # Decrement the counter
                         self.startup_counter -= 1
@@ -1112,7 +1183,7 @@ class GUI(object):
                 """Display a simple Tkinter popup window without buttons."""
                 popup = tk.Tk()
                 popup.withdraw()  # Hide the main Tk window
-                messagebox.showinfo("Reminder", "Be sure to check your feedback in the Feedback Menu")
+                messagebox.showinfo("Reminder", "Task Exited.\n\nBe sure to check your feedback in the Feedback Menu")
                 popup.destroy()
 
             while True:
@@ -1154,8 +1225,6 @@ if __name__ == "__main__":
     cameraID = 0  # Set Camera ID to change camera input (0, 1, etc.)
     font = cv2.FONT_HERSHEY_SIMPLEX
     windowName = "Pediatric Laparoscopic Training Simulator"
-    #displayWidth = self.screen_width
-    #displayHeight = self.screen_height
 
     '''
     HSV Ranges
