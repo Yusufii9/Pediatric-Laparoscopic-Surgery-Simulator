@@ -1,0 +1,22 @@
+,Start Index,End Index,User Signal,Ref Signal,DTW Distance (Weak Performance)
+0,0,83,User_task1_L_pitchVel,Ref_task1_L_pitchVel,5.747076551507631
+1,0,83,User_task1_L_x,Ref_task1_L_x,3.1360557680096988
+2,0,83,User_task1_R_pitchAcc,Ref_task1_R_pitchAcc,2.6336251578309455
+3,0,83,User_task1_R_pitchVel,Ref_task1_R_pitchVel,4.306494628467766
+4,0,83,User_task1_R_yawVel,Ref_task1_R_yawVel,5.090674509681033
+5,83,166,User_task1_L_yawVel,Ref_task1_L_yawVel,4.716990566028302
+6,166,249,User_task1_L_yawVel,Ref_task1_L_yawVel,6.128258770283407
+7,166,249,User_task1_L_roll,Ref_task1_L_roll,2.7909242706535564
+8,249,332,User_task1_L_yawVel,Ref_task1_L_yawVel,4.5
+9,249,332,User_task1_L_rollVel,Ref_task1_L_rollVel,4.6097722286464435
+10,249,332,User_task1_L_roll,Ref_task1_L_roll,4.205448522534929
+11,332,415,User_task1_L_yawVel,Ref_task1_L_yawVel,4.663689526544408
+12,332,415,User_task1_L_rollVel,Ref_task1_L_rollVel,4.527692569068709
+13,332,415,User_task1_L_motion,Ref_task1_L_motion,2.7771023702830666
+14,415,498,User_task1_L_rollVel,Ref_task1_L_rollVel,4.5
+15,415,498,User_task1_L_x,Ref_task1_L_x,2.5435595202423
+16,415,498,User_task1_R_pitchVel,Ref_task1_R_pitchVel,4.528050486814129
+17,498,581,User_task1_R_pitchAcc,Ref_task1_R_pitchAcc,3.50338054133265
+18,498,581,User_task1_R_yawAcc,Ref_task1_R_yawAcc,2.7324326867713653
+19,498,581,User_task1_R_surgeAcc,Ref_task1_R_surgeAcc,5.645184011844943
+20,498,581,User_task1_R_rollVel,Ref_task1_R_rollVel,4.662378486670261
