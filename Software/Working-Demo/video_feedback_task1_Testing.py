@@ -2,7 +2,11 @@ import datetime
 import tkinter as tk
 from tkVideoPlayer import TkinterVideo
 import os
+import warnings
 import time
+
+
+warnings.filterwarnings('ignore')
 
 
 class VideoPlayFeedback:
@@ -27,6 +31,9 @@ class VideoPlayFeedback:
 
         self.play_pause_btn = tk.Button(root, text="Play", command=self.play_pause)
         self.play_pause_btn.pack()
+
+        self.prev_clip_btn = tk.Button(root, text="Previous Clip", command=self.find_prev_video)
+        self.prev_clip_btn.pack(side="left")
 
         self.skip_minus_5sec = tk.Button(root, text="Skip -5 sec", command=lambda: self.skip(-5))
         self.skip_minus_5sec.pack(side="left")
@@ -108,6 +115,32 @@ class VideoPlayFeedback:
             print("Loading next video:", next_video_path)
             self.vid_player.load(next_video_path)
             self.first_video = next_video_path 
+
+            self.play_pause_btn["text"] = "Play"
+            self.progress_slider.set(0)
+            self.progress_value.set(0)
+            self.update_duration(None)
+
+        except Exception as e:
+            print("Error occurred:", e)
+
+    def find_prev_video(self):
+        try:
+            if self.vid_player.is_paused():
+                self.vid_player.play()
+                self.root.after(100, self.vid_player.stop)  # Stop the video after a short delay
+            else:
+                self.vid_player.stop()
+
+            self.root.after(200)
+
+            current_index = self.video_files.index(os.path.basename(self.first_video))
+            prev_index = (current_index - 1) % len(self.video_files)
+            prev_video_path = os.path.join(self.video_directory, self.video_files[prev_index])
+
+            print("Loading previous video:", prev_video_path)
+            self.vid_player.load(prev_video_path)
+            self.first_video = prev_video_path
 
             self.play_pause_btn["text"] = "Play"
             self.progress_slider.set(0)
