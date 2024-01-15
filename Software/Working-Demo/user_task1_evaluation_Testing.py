@@ -27,6 +27,8 @@ class Task1PerformanceAnalyzer:
         self.normalized_data = None
         self.dtw_distances = []
         self.load_data()
+        self.columns = ['Start Index', 'End Index', 'User Signal', 'Ref Signal', 'DTW Distance (Weak Performance)']
+        self.info_df = pd.DataFrame(columns=self.columns)
 
     def load_data(self):
         self.reference_data = pd.read_csv(self.reference_path)
@@ -173,6 +175,14 @@ class Task1PerformanceAnalyzer:
 
         for i in range(len(self.get_inf_df)):
             if self.get_inf_df["DTW Distance"][i] > self.far_away[0]:
+
+                info_df_data = {'Start Index': self.get_inf_df["Start Index"][i],
+                                'End Index': self.get_inf_df["End Index"][i],
+                                'User Signal': self.get_inf_df["User Signal"][i],
+                                'Ref Signal': self.get_inf_df["Ref Signal"][i],
+                                'DTW Distance (Weak Performance)': self.get_inf_df["DTW Distance"][i]}
+                self.info_df = pd.concat([self.info_df, pd.DataFrame([info_df_data])], ignore_index=True)
+
                 ref_start_time = read_normalized_data["Ref_task1_Time"].loc[self.get_inf_df.loc[i][0]]  # start index
                 ref_end_time = read_normalized_data["Ref_task1_Time"].loc[self.get_inf_df.loc[i][1]]  # end index
                 user_start_time = read_normalized_data["User_task1_Time"].loc[self.get_inf_df.loc[i][0]]
@@ -182,6 +192,8 @@ class Task1PerformanceAnalyzer:
                 ref_end_timestamps.append(ref_end_time)
                 user_start_timestamps.append(user_start_time)
                 user_end_timestamps.append(user_end_time)
+
+        self.info_df.to_csv("task1_weak_signal_performance.csv")
 
         ref_start_timestamps = sorted(list(set(ref_start_timestamps)))
         print(f"Ref start timestamps: {ref_start_timestamps}")
