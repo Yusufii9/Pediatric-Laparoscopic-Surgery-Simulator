@@ -14,12 +14,17 @@ import threading
 #from matplotlib.widgets import Slider, CheckButtons
 from cleaning_sensor_data import SensorDataCleaner
 from seg_data_to_subtasks import DataSegmentation
-from user_task1_evaluation import Task1PerformanceAnalyzer
+from user_task1_evaluation_Testing import Task1PerformanceAnalyzer
 from plot_user_aligned_subtasks import DataPlotter
 from show_feedback_video import VideoPlayer
 from itertools import cycle
-from video_feedback_task1 import VideoPlayFeedback
+from video_feedback_task1_Testing import VideoPlayFeedback
 from video_playback import VideoPlayback
+
+if not dir("Feedback clips"):
+    os.mkdir("Feedback clips")  # add exception handling
+else:
+    pass
 
 
 class Application(tk.Tk):
@@ -190,7 +195,6 @@ class Application(tk.Tk):
                            border=0, cursor='hand1', font=('MS Sans Serif', 8, 'bold'))
         self.canvas.create_window(0, 0, anchor='nw', window=button,tags=("overlay",))
         return button
-
 
     def test_train_window(self):
         self.remove_buttons()
@@ -973,9 +977,9 @@ class GUI(object):
                         else:
                             lower_bound = np.array([255, 255, 255])
                             upper_bound = np.array([255, 255, 255])
-                            self.file.close()
+                            #self.file.close()
                             #quit_program(self)
-                            return
+                            #return
 
                         myMask = cv2.inRange(frameHSV, lower_bound, upper_bound)
 
