@@ -93,27 +93,22 @@ class VideoPlayerApp:
 
     def find_next_video(self):
         try:
-            # If the video is paused, play it briefly before stopping
             if self.vid_player.is_paused():
                 self.vid_player.play()
                 self.root.after(100, self.vid_player.stop)  # Stop the video after a short delay
             else:
                 self.vid_player.stop()
 
-            # Allow a short time for the player to update its state
             self.root.after(200)
 
-            # Move to the next video
             current_index = self.video_files.index(os.path.basename(self.first_video))
             next_index = (current_index + 1) % len(self.video_files)
             next_video_path = os.path.join(self.video_directory, self.video_files[next_index])
 
-            # Load the next video
             print("Loading next video:", next_video_path)
             self.vid_player.load(next_video_path)
-            self.first_video = next_video_path  # Update the current video path
+            self.first_video = next_video_path 
 
-            # Reset and update UI elements
             self.play_pause_btn["text"] = "Play"
             self.progress_slider.set(0)
             self.progress_value.set(0)
