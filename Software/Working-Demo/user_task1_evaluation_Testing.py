@@ -202,8 +202,8 @@ class Task1PerformanceAnalyzer:
         for i in range(min_index_length):
             user_start_seconds = user_start_timestamps[i]
             user_end_seconds = user_end_timestamps[i]
-            user_target_name = f"Clip{i}_User.mp4"
-            ffmpeg_extract_subclip("Video9.mp4", user_start_seconds, user_end_seconds, targetname=user_target_name)
+            user_target_name = f"Group{i}_Peaks_in_Youssef.mp4"
+            ffmpeg_extract_subclip("Youssef.mp4", user_start_seconds, user_end_seconds, targetname=user_target_name)
             user_clip = VideoFileClip(user_target_name)
             user_text = TextClip("You", font="Amiri-bold", fontsize=50, color='white').set_duration(user_clip.duration)\
                 .margin(top=40, left=40, opacity=0).set_position(("left", "top"))
@@ -212,8 +212,8 @@ class Task1PerformanceAnalyzer:
 
             ref_start_seconds = ref_start_timestamps[i]
             ref_end_seconds = ref_end_timestamps[i]
-            ref_target_name = f"Clip{i}_Ref.mp4"
-            ffmpeg_extract_subclip("Video10.mp4", ref_start_seconds, ref_end_seconds, targetname=ref_target_name)
+            ref_target_name = f"Group{i}_Peaks_in_Atallah.mp4"
+            ffmpeg_extract_subclip("Atallah.mp4", ref_start_seconds, ref_end_seconds, targetname=ref_target_name)
             ref_clip = VideoFileClip(ref_target_name)
             ref_text = TextClip("Expert", font="Amiri-bold", fontsize=50, color='white').set_duration(
                 ref_clip.duration).margin(top=40, right=20, opacity=0).set_position(("right", "top"))
@@ -227,8 +227,8 @@ class Task1PerformanceAnalyzer:
 
 
 if __name__ == "__main__":
-    analysis = Task1PerformanceAnalyzer('Video10_Reference_Seg1.csv', 'Video9_user_Seg1.csv', 'Video10.mp4',
-                                        'Video9.mp4')
+    analysis = Task1PerformanceAnalyzer('Demo_Reference_Seg1.csv', 'Demo_user_Seg1.csv', 'Atallah.mp4',
+                                        'Youssef.mp4')
     aligned_data_var = analysis.align_data()
     analysis.normalize_and_process_windows()
     analysis.process_videos()
