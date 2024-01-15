@@ -5,7 +5,7 @@ import os
 import time
 
 
-class VideoPlayerApp:
+class VideoPlayFeedback:
     def __init__(self, root):
         self.root = root
         self.root.title("Tkinter Media Player")
@@ -125,5 +125,5 @@ class VideoPlayerApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    VideoPlayerApp(root)
+    VideoPlayFeedback(root)
     root.mainloop()
