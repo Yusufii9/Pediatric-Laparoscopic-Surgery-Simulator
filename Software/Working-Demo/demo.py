@@ -18,7 +18,7 @@ from user_task1_evaluation_Testing import Task1PerformanceAnalyzer
 from plot_user_aligned_subtasks import DataPlotter
 from show_feedback_video import VideoPlayer
 from itertools import cycle
-from video_feedback_task1_Testing import VideoPlayFeedback
+from video_feedback_task1_Testing import Task1VideoPlayFeedback
 from video_playback import VideoPlayback
 
 if not dir("Feedback clips"):
@@ -376,7 +376,7 @@ class Application(tk.Tk):
 
     def video_feedback(self):
         video_window = tk.Toplevel()
-        VideoPlayFeedback(video_window)
+        Task1VideoPlayFeedback(video_window)
 
     def peg_sub_task_video(self):
         self.remove_buttons()
