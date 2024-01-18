@@ -9,7 +9,7 @@ import time
 warnings.filterwarnings('ignore')
 
 
-class VideoPlayFeedback:
+class Task1VideoPlayFeedback:
     def __init__(self, root):
         self.root = root
         self.root.title("Tkinter Media Player")
@@ -29,6 +29,12 @@ class VideoPlayFeedback:
         self.vid_player = TkinterVideo(scaled=True, master=root)
         self.vid_player.pack(expand=True, fill="both")
 
+        self.video_files = sorted([file for file in os.listdir(self.video_directory) if file.endswith('.mp4')])
+        num_clips = len(self.video_files)
+
+        self.clips_count_label = tk.Label(root, text=f"Number of Clips to Watch: {num_clips}")
+        self.clips_count_label.pack()
+        
         self.play_pause_btn = tk.Button(root, text="Play", command=self.play_pause)
         self.play_pause_btn.pack()
 
@@ -158,5 +164,5 @@ class VideoPlayFeedback:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    VideoPlayFeedback(root)
+    Task1VideoPlayFeedback(root)
     root.mainloop()
