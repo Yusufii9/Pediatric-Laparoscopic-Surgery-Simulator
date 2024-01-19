@@ -14,12 +14,13 @@ import threading
 #from matplotlib.widgets import Slider, CheckButtons
 from cleaning_sensor_data import SensorDataCleaner
 from seg_data_to_subtasks import DataSegmentation
+from task1_written_feedback import check_signals_in_column
 from user_task1_evaluation_Testing import Task1PerformanceAnalyzer
 from plot_user_aligned_subtasks import DataPlotter
 from show_feedback_video import VideoPlayer
 from itertools import cycle
 from video_feedback_task1_Testing import Task1VideoPlayFeedback
-from video_playback import VideoPlayback
+from video_playback import VideoPlayerApp
 
 if not dir("Feedback clips"):
     os.mkdir("Feedback clips")  # add exception handling
@@ -53,10 +54,10 @@ class Application(tk.Tk):
         self.welcome_text = self.canvas.create_text(self.screen_width/2, self.screen_height/3 + 50, text='Welcome', font=('MS Sans Serif', 100), fill='black', tags=("overlay", "text",))
         #self.welcome_shadow = self.canvas.create_text(self.screen_width/2 + self.shadow_offset_x, self.screen_height/3 + self.shadow_offset_y,text="Welcome",font=('MS Sans Serif', 100), fill=self.shadow_color, tags=("shadow",))
         #self.rect = self.canvas.create_rectangle(self.screen_width/2 + 400, 700, self.screen_height/3 + 100, 100, fill="black")
-        self.current_user = None
+        self.current_user = "guest"
         self.back_button = None
         self.buttons = []
-        self.base_directory = 'C:/Users/hudaa/PycharmProjects/pythonProject1/UserData'
+        self.base_directory = 'C:/Users/hudaa/PycharmProjects/pythonProjectVideo - Copy/UserData'
         # Initialize the cycle of images
         self.image_paths = ["Slide2.png", "Slide3.png", "Slide4.png", "Slide5.png", "Slide6.png", "Slide7.png", "Slide8.png", "Slide9.png"]
         self.load_video()
@@ -82,7 +83,7 @@ class Application(tk.Tk):
         return user_folder_path
     def set_current_user(self, username):
         self.current_user = username
-        #user_folder = self.create_user_folder(self.base_directory, self.current_user)
+        user_folder = self.create_user_folder(self.current_user)
 
     def mouse_down(self, event):
         self.x, self.y = event.x, event.y
@@ -396,8 +397,47 @@ class Application(tk.Tk):
         csv_file = filedialog.askopenfilename(title="Select the CSV Data File")
         root.destroy()
 
+        # Defining custom messages here
+        custom_messages = {
+            'Ref_task1_L_pitchVel': "Slow down speed of upward-downward or downward-upward motion with the left tool",
+            'Ref_task1_R_pitchVel': "Slow down speed of upward-downward or downward-upward motion with the right tool",
+            'Ref_task1_R_pitchAcc': "Avoid rapid movements while moving tool up-down or down-up with the right tool",
+            'Ref_task1_L_pitchAcc': "Avoid rapid movements while moving tool up-down or down-up with the left tool",
+            'Ref_task1_R_yawVel': "Slow down speed of left-right or right-left motion with the right tool",
+            'Ref_task1_L_yawVel': "Slow down speed of left-right or right-left motion with the left tool",
+            'Ref_task1_R_yawAcc': "Avoid rapid movements while moving right tool right-left or left-right",
+            'Ref_task1_L_yawAcc': "Avoid rapid movements while moving left tool right-left or left-right",
+            'Ref_task1_R_yaw': "Remain within range when moving right tool left-right or right-left",
+            'Ref_task1_L_yaw': "Remain within range when moving left tool left-right or right-left",
+            'Ref_task1_L_rollVel': "Slow down speed while rotating left tool",
+            'Ref_task1_R_rollVel': "Slow down speed while rotating right tool",
+            'Ref_task1_R_rollAcc': "Avoid rapidly rotating left tool",
+            'Ref_task1_L_rollAcc': "Avoid rapidly rotating right tool",
+            'Ref_task1_R_roll': "Remain within range while rotating right tool",
+            'Ref_task1_L_roll': "Remain within range while rotating left tool",
+            'Ref_task1_L_surgeVel': "Slow down speed while pulling left tool in or out of trocar",
+            'Ref_task1_R_surgeVel': "Slow down speed while pulling right tool in or out of trocar",
+            'Ref_task1_R_surgeAcc': "Avoid rapidly pulling right tool in or out",
+            'Ref_task1_L_surgeAcc': "Avoid rapidly pulling left tool in or out",
+            'Ref_task1_R_surge': "Remain within range while pulling right tool in or out of trocar",
+            'Ref_task1_L_surge': "Remain within range while pulling left tool in or out of trocar"
+        }
+
+        # Usage of the function
+        csv_file_path = 'task1_weak_signal_performance.csv'
+        column_name = 'Ref Signal'
+
+        # Call the function and print the results
+        signals_existence_messages = check_signals_in_column(csv_file_path, column_name, custom_messages)
+
         plotter = DataPlotter()
         plotter.load_data(csv_file)
+
+        # Pass each message to the plot_data method
+        for signal, message in signals_existence_messages.items():
+            print(f"Signal: {signal}\nMessage: {message}\n")
+
+        plotter.display_all_feedback(signals_existence_messages)
         plotter.plot_data()
 
     def peg_sub_task_visual(self):
@@ -414,7 +454,7 @@ class Application(tk.Tk):
 
     def GUI_launch(self):
         self.grab_set()
-        peg_task = GUI(cameraID, font, windowName, self.winfo_screenwidth(), self.winfo_screenheight(), red_low, red_high, green_low, green_high, blue_low, blue_high, on_GUI_close=self.on_GUI_close)
+        peg_task = GUI(cameraID, font, windowName, self.winfo_screenwidth(), self.winfo_screenheight(), red_low, red_high, green_low, green_high, blue_low, blue_high, self.current_user, on_GUI_close=self.on_GUI_close)
 
 
 class LoginRegister(tk.Toplevel):
@@ -536,12 +576,13 @@ image capture settings, interface settings, etc.
 class GUI(object):
 
     def __init__(self, cameraID, font, windowName, displayWidth, displayHeight, red_low, red_high,
-                 green_low, green_high, blue_low, blue_high, on_GUI_close=None):
+                 green_low, green_high, blue_low, blue_high, current_user, on_GUI_close=None):
 
 
         # Using cv2.CAP_DSHOW after cameraID specifies direct show, lets program start/open camera much faster.
         self.cap = cv2.VideoCapture(cameraID, cv2.CAP_DSHOW)
         self.on_GUI_close = on_GUI_close
+        self.current_user = current_user
 
         self.image_state = 5
         self.displayWidth = displayWidth
@@ -632,7 +673,7 @@ class GUI(object):
             '''
             def start_sensors(self):
                 try:
-                    self.ser = serial.Serial('COM3', 31250)   # COM port may change depending on computer/devices being used
+                    self.ser = serial.Serial('COM6', 9600)   # COM port may change depending on computer/devices being used
                     self.ser.flushInput()
 
                 except serial.SerialException:
@@ -1113,7 +1154,31 @@ class GUI(object):
                     self.ser.flushInput()
                     self.timer = time.time()
                     self.task_start = time.time()
-                    self.file = open("sensor_data.txt", "w")
+                    # Load the current file count from a file
+                    try:
+                        user_folder = os.path.join('UserData', self.current_user)
+                        user_file_count_file = os.path.join(user_folder, 'file_count.txt')
+
+                        with open(user_file_count_file, 'r') as count_file:
+                            file_count = int(count_file.read())
+                    except FileNotFoundError:
+                        user_folder = os.path.join('UserData', self.current_user)
+                        user_file_count_file = os.path.join(user_folder, 'file_count.txt')
+                        file_count = 0
+
+                    while True:
+                        filename = os.path.join(user_folder, f"{self.current_user}_sensor_data_{file_count}.txt")
+                        if not os.path.exists(filename):
+                            break
+                        file_count += 1
+
+                    # Increment the file count and save it back to the file
+                    file_count += 1
+
+                    with open(user_file_count_file, 'w') as count_file:
+                        count_file.write(str(file_count))
+
+                    self.file = open(filename, "w")
 
 
 
