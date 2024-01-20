@@ -15,7 +15,7 @@ class Task1VideoPlayFeedback:
         self.root.title("Tkinter Media Player")
 
         # self.first_video = "Feedback clips/test_new_video.mp4"
-        self.path = "Feedback clips"
+        self.path = "Task 1 Feedback clips"
         self.video_directory = self.path
         print(self.video_directory)
         folder_path = self.path
