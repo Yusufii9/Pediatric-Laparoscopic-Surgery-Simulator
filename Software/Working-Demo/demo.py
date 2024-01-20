@@ -1,6 +1,7 @@
+import os
 import tkinter as tk
 from tkinter import messagebox, filedialog, Toplevel
-
+from tkinter import messagebox
 import cv2
 import imageio
 from PIL import Image, ImageTk
@@ -16,16 +17,28 @@ from cleaning_sensor_data import SensorDataCleaner
 from seg_data_to_subtasks import DataSegmentation
 from task1_written_feedback import check_signals_in_column
 from user_task1_evaluation_Testing import Task1PerformanceAnalyzer
+from user_task2_evaluation_Testing import Task2PerformanceAnalyzer
+from user_task3_evaluation_Testing import Task3PerformanceAnalyzer
 from plot_user_aligned_subtasks import DataPlotter
 from show_feedback_video import VideoPlayer
 from itertools import cycle
 from video_feedback_task1_Testing import Task1VideoPlayFeedback
+from video_feedback_task2 import Task2VideoPlayFeedback
+from video_feedback_task3 import Task3VideoPlayFeedback
 from video_playback import VideoPlayerApp
+import warnings
 
-if not dir("Feedback clips"):
-    os.mkdir("Feedback clips")  # add exception handling
+
+warnings.filterwarnings('ignore')
+
+if not os.path.exists("Task 1 Feedback clips") and not os.path.exists("Task 2 Feedback clips") \
+        and not os.path.exists("Task 3 Feedback clips"):
+    os.mkdir("Task 1 Feedback clips")
+    os.mkdir("Task 2 Feedback clips")
+    os.mkdir("Task 3 Feedback clips")
+    print("Folders Created")
 else:
-    pass
+    messagebox.showwarning(title="Warning", message="Folders Already Exist!")
 
 
 class Application(tk.Tk):
@@ -57,7 +70,7 @@ class Application(tk.Tk):
         self.current_user = "guest"
         self.back_button = None
         self.buttons = []
-        self.base_directory = 'C:/Users/hudaa/PycharmProjects/pythonProjectVideo - Copy/UserData'
+        self.base_directory = r"C:\Users\hudasheikh\Desktop\Pediatric-Laparoscopic-Surgery-Simulator-main\myLapSim\UserData"
         # Initialize the cycle of images
         self.image_paths = ["Slide2.png", "Slide3.png", "Slide4.png", "Slide5.png", "Slide6.png", "Slide7.png", "Slide8.png", "Slide9.png"]
         self.load_video()
@@ -288,18 +301,31 @@ class Application(tk.Tk):
                 new_window.destroy()
                 self.deiconify()
 
-        def background_task():
+        def background_task1():
             try:
-                self.analysis = Task1PerformanceAnalyzer('Demo_Reference_Seg1.csv', 'Demo_user_Seg1.csv', 'Atallah.mp4',
-                                                         'Youssef.mp4')
-                self.aligned_data = self.analysis.align_data()
-                self.analysis.normalize_and_process_windows()
-                self.analysis.process_videos()
+                self.analysis1 = Task1PerformanceAnalyzer('Demo_Reference_Seg1.csv', 'Demo_user_Seg1.csv', 'Youssef.mp4'
+                                                          , 'Atallah.mp4')
+                self.aligned_data1 = self.analysis1.align_data()
+                self.analysis1.normalize_and_process_windows()
+                self.analysis1.process_videos()
+
+                self.analysis2 = Task2PerformanceAnalyzer('Demo_Reference_Seg2.csv', 'Demo_user_Seg2.csv', 'Youssef.mp4'
+                                                          , 'Atallah.mp4')
+                self.aligned_data2 = self.analysis2.align_data()
+                self.analysis2.normalize_and_process_windows()
+                self.analysis2.process_videos()
+
+                self.analysis3 = Task3PerformanceAnalyzer('Demo_Reference_Seg3.csv', 'Demo_user_Seg3.csv', 'Youssef.mp4'
+                                                          , 'Atallah.mp4')
+                self.aligned_data3 = self.analysis3.align_data()
+                self.analysis3.normalize_and_process_windows()
+                self.analysis3.process_videos()
             except Exception as e:
                 messagebox.showerror("Error", f"An error occurred: {e}")
             finally:
                 # Use after method to safely close the window from the main thread
                 new_window.after(0, close_new_window)
+
         try:
             cleaner = SensorDataCleaner()
             cleaner.clean_sensor_data()
@@ -324,14 +350,14 @@ class Application(tk.Tk):
             update_image()
 
             # Start the background task in a separate thread
-            background_thread = threading.Thread(target=background_task, daemon=True)
-            background_thread.start()
+            background_thread1 = threading.Thread(target=background_task1, daemon=True)
+            background_thread1.start()
         except Exception as e:
             messagebox.showerror("Error", f"An error occurred: {e}")
 
     def video_playback(self):
         video_window = tk.Toplevel()
-        VideoPlayback(video_window)
+        VideoPlayerApp(video_window)
 
     def feedback_menu(self):
         self.remove_buttons()
@@ -375,9 +401,17 @@ class Application(tk.Tk):
         self.add_button('Video Feedback', self.peg_sub_task_video, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.evaluation_menu)
 
-    def video_feedback(self):
+    def video_feedback1(self):
         video_window = tk.Toplevel()
         Task1VideoPlayFeedback(video_window)
+
+    def video_feedback2(self):
+        video_window = tk.Toplevel()
+        Task2VideoPlayFeedback(video_window)
+
+    def video_feedback3(self):
+        video_window = tk.Toplevel()
+        Task3VideoPlayFeedback(video_window)
 
     def peg_sub_task_video(self):
         self.remove_buttons()
@@ -386,9 +420,9 @@ class Application(tk.Tk):
             self.back_button = None  # Set back_button to None after destroying
         self.canvas.itemconfig(self.welcome_text, text='Video Feedback', font=('MS Sans Serif', 80))
         #self.canvas.itemconfig(self.welcome_shadow, text='Video Feedback', font=('MS Sans Serif', 80))
-        self.add_button('Subtask 3', self.destroy, (self.screen_height/3 + 250))
-        self.add_button('Subtask 2', self.destroy, (self.screen_height/3 + 200))
-        self.add_button('Subtask 1', self.video_feedback, (self.screen_height/3 + 150))
+        self.add_button('Subtask 3', self.video_feedback3, (self.screen_height/3 + 250))
+        self.add_button('Subtask 2', self.video_feedback2, (self.screen_height/3 + 200))
+        self.add_button('Subtask 1', self.video_feedback1, (self.screen_height/3 + 150))
         self.back_button = self.add_back_button('Back', self.peg_evaluation_sub_menu)
 
     def visual_test(self):
