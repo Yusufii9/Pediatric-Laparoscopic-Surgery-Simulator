@@ -280,8 +280,8 @@ class Task3PerformanceAnalyzer:
 
 
 if __name__ == "__main__":
-    analysis = Task3PerformanceAnalyzer('Video10_Reference_Seg3.csv', 'Video9_user_Seg3.csv', 'Video10.mp4',
-                                        'Video9.mp4')
+    analysis = Task3PerformanceAnalyzer('Demo_Reference_Seg3.csv', 'Demo_user_Seg3.csv', 'Youssef.mp4',
+                                        'Atallah.mp4')
     aligned_data_var = analysis.align_data()
     analysis.normalize_and_process_windows()
     analysis.process_videos()
