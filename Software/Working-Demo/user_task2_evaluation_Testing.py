@@ -118,7 +118,7 @@ class Task2PerformanceAnalyzer:
         original_timestamps.to_csv('original_timestamps_task2.csv', index=False)
         return original_timestamps
 
-    def normalize_and_process_windows(self, window_size_seconds=5):
+    def normalize_and_process_windows(self, window_size_seconds=10):
         data = pd.read_csv('aligned_signals_task2.csv')
         data.drop(columns="Unnamed: 0", inplace=True)
 
@@ -142,6 +142,7 @@ class Task2PerformanceAnalyzer:
         sampling_rate_user = 1 / avg_time_between_samples_user
 
         sampling_rate = max(sampling_rate_ref, sampling_rate_user)
+        print(sampling_rate)
         window_size = round(window_size_seconds * sampling_rate)
         print(f"Task 2 Window Size: {window_size}")
 
@@ -280,8 +281,12 @@ class Task2PerformanceAnalyzer:
 
 
 if __name__ == "__main__":
-    analysis = Task2PerformanceAnalyzer('Video10_Reference_Seg2.csv', 'Video9_user_Seg2.csv', 'Video10.mp4',
-                                        'Video9.mp4')
+    analysis = Task2PerformanceAnalyzer('Demo_Reference_Seg2.csv', 'Demo_user_Seg2.csv', 'Youssef.mp4',
+                                        'Atallah.mp4')
+
+    # analysis = Task2PerformanceAnalyzer('Video10_Reference_Seg2.csv', 'Video9_user_Seg2.csv', 'Video10.mp4',
+    #                                     'Video9.mp4')
+
     aligned_data_var = analysis.align_data()
     analysis.normalize_and_process_windows()
     analysis.process_videos()
