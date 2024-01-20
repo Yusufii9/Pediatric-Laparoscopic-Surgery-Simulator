@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import numpy as np
 import ast
@@ -8,12 +9,15 @@ from dtaidistance import dtw
 from sklearn.preprocessing import MinMaxScaler
 from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
 from moviepy.editor import VideoFileClip, clips_array, TextClip, CompositeVideoClip
+from user_task2_evaluation_Testing import Task2PerformanceAnalyzer
+from user_task3_evaluation_Testing import Task3PerformanceAnalyzer
 
 warnings.filterwarnings('ignore')
 
 
 class Task1PerformanceAnalyzer:
     def __init__(self, reference_path, user_path, ref_video_path, user_video_path):
+        self.alignment_paths = None
         self.far_away = None
         self.get_inf_df = None
         self.reference_path = reference_path
@@ -69,10 +73,10 @@ class Task1PerformanceAnalyzer:
         return float(ast.literal_eval(string)[0])
 
     def align_data(self):
-        # Align the data and calculate DTW distances
         dtw_distances = {signal: self.dtw_distance(self.reference_data[signal], self.user_data[signal]) for signal
                          in self.signal_columns}
         aligned_data = {}
+        self.alignment_paths = {}  # Store alignment paths for each signal
 
         for signal in self.signal_names:
             ref_signal = self.reference_data[signal].values.reshape(-1, 1)
@@ -80,6 +84,7 @@ class Task1PerformanceAnalyzer:
 
             distance, path = fastdtw(ref_signal, user_signal, dist=euclidean)
             print(f'{signal}: {distance}')
+            self.alignment_paths[signal] = path
 
             aligned_ref = [ref_signal[i] for i, j in path]
             aligned_user = [user_signal[j] for i, j in path]
@@ -91,8 +96,31 @@ class Task1PerformanceAnalyzer:
         df_aligned.to_csv('aligned_signals_task1.csv', index=True)
         return df_aligned
 
-    def normalize_and_process_windows(self, window_size_seconds=5):
-        # Normalize the data and process it in windows
+    def map_aligned_timestamps_to_original(self):
+        if self.reference_data is None or self.user_data is None:
+            self.load_data()
+
+        aligned_data = pd.read_csv('aligned_signals_task1.csv')
+        aligned_data.drop(columns='Unnamed: 0', inplace=True)
+
+        original_timestamps = pd.DataFrame(index=aligned_data.index)
+
+        for signal in self.signal_names:
+            path = self.alignment_paths[signal]
+
+            # Map indices to original timestamps
+            ref_times = [self.reference_data['Time'][i] for i, j in path]
+            user_times = [self.user_data['Time'][j] for i, j in path]
+
+            # Ensure the lengths match with the aligned data
+            min_len = min(len(ref_times), len(user_times), len(aligned_data))
+            original_timestamps[f'Ref_task1_{signal}_Time'] = pd.Series(ref_times[:min_len])
+            original_timestamps[f'User_task1_{signal}_Time'] = pd.Series(user_times[:min_len])
+
+        original_timestamps.to_csv('original_timestamps_task1.csv', index=False)
+        return original_timestamps
+
+    def normalize_and_process_windows(self, window_size_seconds=10):
         data = pd.read_csv('aligned_signals_task1.csv')
         data.drop(columns="Unnamed: 0", inplace=True)
 
@@ -116,8 +144,9 @@ class Task1PerformanceAnalyzer:
         sampling_rate_user = 1 / avg_time_between_samples_user
 
         sampling_rate = max(sampling_rate_ref, sampling_rate_user)
+        print(sampling_rate)
         window_size = round(window_size_seconds * sampling_rate)
-        print(f"Window Size: {window_size}")
+        print(f"Task 1 Window Size: {window_size}")
 
         scaler = MinMaxScaler()
         normalized_windows = []
@@ -154,10 +183,10 @@ class Task1PerformanceAnalyzer:
         min_dtw = self.get_inf_df["DTW Distance"].min()
         std_dtw = self.get_inf_df["DTW Distance"].std()
 
-        print(f"Mean DTW Distance: {mean_dtw}")
-        print(f"Max DTW Distance: {max_dtw}")
-        print(f"Min DTW Distance: {min_dtw}")
-        print(f"Standard Deviation: {std_dtw}")
+        print(f"Task 1 Mean DTW Distance: {mean_dtw}")
+        print(f"Task 1 Max DTW Distance: {max_dtw}")
+        print(f"Task 1 Min DTW Distance: {min_dtw}")
+        print(f"Task 1 Standard Deviation: {std_dtw}")
 
         good_performance = (0.0, mean_dtw)
         moderate = (mean_dtw, mean_dtw + std_dtw)
@@ -166,16 +195,12 @@ class Task1PerformanceAnalyzer:
         print(good_performance, moderate, self.far_away)
 
     def process_videos(self):
-        read_normalized_data = pd.read_csv("normalized_data_task1.csv")
+        original_timestamps = self.map_aligned_timestamps_to_original()
 
-        ref_start_timestamps = []
-        ref_end_timestamps = []
-        user_start_timestamps = []
-        user_end_timestamps = []
+        clip_time_boundaries_list = []
 
         for i in range(len(self.get_inf_df)):
             if self.get_inf_df["DTW Distance"][i] > self.far_away[0]:
-
                 info_df_data = {'Start Index': self.get_inf_df["Start Index"][i],
                                 'End Index': self.get_inf_df["End Index"][i],
                                 'User Signal': self.get_inf_df["User Signal"][i],
@@ -183,64 +208,95 @@ class Task1PerformanceAnalyzer:
                                 'DTW Distance (Weak Performance)': self.get_inf_df["DTW Distance"][i]}
                 self.info_df = pd.concat([self.info_df, pd.DataFrame([info_df_data])], ignore_index=True)
 
-                ref_start_time = read_normalized_data["Ref_task1_Time"].loc[self.get_inf_df.loc[i][0]]  # start index
-                ref_end_time = read_normalized_data["Ref_task1_Time"].loc[self.get_inf_df.loc[i][1]]  # end index
-                user_start_time = read_normalized_data["User_task1_Time"].loc[self.get_inf_df.loc[i][0]]
-                user_end_time = read_normalized_data["User_task1_Time"].loc[self.get_inf_df.loc[i][1]]
+                ref_signal = self.get_inf_df["Ref Signal"][i]
+                user_signal = self.get_inf_df["User Signal"][i]
+                ref_start_time = original_timestamps[f"{ref_signal}_Time"].iloc[
+                    self.get_inf_df.loc[i][0]]  # start index
+                ref_end_time = original_timestamps[f"{ref_signal}_Time"].iloc[self.get_inf_df.loc[i][1]]  # end index
+                user_start_time = original_timestamps[f"{user_signal}_Time"].iloc[self.get_inf_df.loc[i][0]]
+                user_end_time = original_timestamps[f"{user_signal}_Time"].iloc[self.get_inf_df.loc[i][1]]
 
-                ref_start_timestamps.append(ref_start_time)
-                ref_end_timestamps.append(ref_end_time)
-                user_start_timestamps.append(user_start_time)
-                user_end_timestamps.append(user_end_time)
+                clip_time_boundaries_list.append(pd.DataFrame({
+                    'Start Index': [self.get_inf_df["Start Index"][i]],
+                    'End Index': [self.get_inf_df["End Index"][i]],
+                    'Ref Start Time': [ref_start_time],
+                    'Ref End Time': [ref_end_time],
+                    'User Start Time': [user_start_time],
+                    'User End Time': [user_end_time]
+                }))
 
+        clip_time_boundaries = pd.concat(clip_time_boundaries_list, ignore_index=True)
+        clip_time_boundaries.to_csv("task1_clip_time_boundaries.csv")
         self.info_df.to_csv("task1_weak_signal_performance.csv")
 
-        ref_start_timestamps = sorted(list(set(ref_start_timestamps)))
-        print(f"Ref start timestamps: {ref_start_timestamps}")
-        ref_end_timestamps = sorted(list(set(ref_end_timestamps)))
-        print(f"Ref end timestamps: {ref_end_timestamps}")
-        user_start_timestamps = sorted(list(set(user_start_timestamps)))
-        print(f"User start timestamps: {user_start_timestamps}")
-        user_end_timestamps = sorted(list(set(user_end_timestamps)))
-        print(f"User end timestamps: {user_end_timestamps}")
+        grouped_clip_time_boundaries = clip_time_boundaries.groupby(['Start Index', 'End Index']).agg({
+            'Ref Start Time': 'min',
+            'Ref End Time': 'max',
+            'User Start Time': 'min',
+            'User End Time': 'max'
+        }).reset_index()
+        grouped_clip_time_boundaries.to_csv("task1_grouped_clip_time_boundaries.csv")
 
-        user_clips = []
-        ref_clips = []
+        print(f"Task 1 Ref start timestamps: {grouped_clip_time_boundaries['Ref Start Time'].tolist()}")
+        print(f"Task 1 Ref end timestamps: {grouped_clip_time_boundaries['Ref End Time'].tolist()}")
+        print(f"Task 1 User start timestamps: {grouped_clip_time_boundaries['User Start Time'].tolist()}")
+        print(f"Task 1 User end timestamps: {grouped_clip_time_boundaries['User End Time'].tolist()}")
+        print(f"Task 1 Number of proposed combined clips: {len(grouped_clip_time_boundaries)}")
 
-        min_index_length = min(len(user_start_timestamps), len(user_end_timestamps), len(ref_start_timestamps),
-                               len(ref_end_timestamps))
-        print(f"Number of combined clips: {min_index_length}")
+        for index, row in grouped_clip_time_boundaries.iterrows():
+            ref_start_seconds = row['Ref Start Time']
+            ref_end_seconds = row['Ref End Time']
+            user_start_seconds = row['User Start Time']
+            user_end_seconds = row['User End Time']
 
-        for i in range(min_index_length):
-            user_start_seconds = user_start_timestamps[i]
-            user_end_seconds = user_end_timestamps[i]
-            user_target_name = f"Group{i}_Peaks_in_Youssef.mp4"
-            ffmpeg_extract_subclip("Youssef.mp4", user_start_seconds, user_end_seconds, targetname=user_target_name)
-            user_clip = VideoFileClip(user_target_name)
-            user_text = TextClip("You", font="Amiri-bold", fontsize=50, color='white').set_duration(user_clip.duration)\
-                .margin(top=40, left=40, opacity=0).set_position(("left", "top"))
-            user_clip_with_text = CompositeVideoClip([user_clip, user_text])
-            user_clips.append(user_clip_with_text)
+            if (ref_start_seconds != ref_end_seconds) and (user_start_seconds != user_end_seconds):
+                user_target_name = f"Task1_Group{index}_User_Clip.mp4"
+                ffmpeg_extract_subclip(self.user_video_path, user_start_seconds, user_end_seconds,
+                                       targetname=user_target_name)
+                user_clip = VideoFileClip(user_target_name)
+                # user_text = TextClip("User (You)", fontsize=70, color='white').set_duration(user_clip.duration).
+                # set_position(
+                #     'bottom')
+                user_text = TextClip("User (You)", font="Amiri-bold", fontsize=50, color='white').set_duration(
+                    user_clip.duration) \
+                    .margin(top=40, left=40, opacity=0).set_position(("left", "top"))
+                user_clip_with_text = CompositeVideoClip([user_clip, user_text])
 
-            ref_start_seconds = ref_start_timestamps[i]
-            ref_end_seconds = ref_end_timestamps[i]
-            ref_target_name = f"Group{i}_Peaks_in_Atallah.mp4"
-            ffmpeg_extract_subclip("Atallah.mp4", ref_start_seconds, ref_end_seconds, targetname=ref_target_name)
-            ref_clip = VideoFileClip(ref_target_name)
-            ref_text = TextClip("Expert", font="Amiri-bold", fontsize=50, color='white').set_duration(
-                ref_clip.duration).margin(top=40, right=20, opacity=0).set_position(("right", "top"))
-            ref_clip_with_text = CompositeVideoClip([ref_clip, ref_text])
-            ref_clips.append(ref_clip_with_text)
+                ref_target_name = f"Task1_Group{index}_Ref_Clip.mp4"
+                ffmpeg_extract_subclip(self.ref_video_path, ref_start_seconds, ref_end_seconds,
+                                       targetname=ref_target_name)
+                ref_clip = VideoFileClip(ref_target_name)
+                # ref_text = TextClip("Expert", fontsize=70, color='white').set_duration(ref_clip.duration).
+                # set_position(
+                #     'bottom')
+                ref_text = TextClip("Expert", font="Amiri-bold", fontsize=50, color='white').set_duration(
+                    ref_clip.duration).margin(top=40, right=20, opacity=0).set_position(("right", "top"))
+                ref_clip_with_text = CompositeVideoClip([ref_clip, ref_text])
 
-        # Combine and save each pair of user and ref clips separately, remind yourself
-        for i, (user_clip, ref_clip) in enumerate(zip(user_clips, ref_clips)):
-            combined_clip = clips_array([[user_clip, ref_clip]])
-            combined_clip.write_videofile(f"Feedback clips/Combined_Clip_{i}.mp4")
+                final_clip = clips_array([[user_clip_with_text, ref_clip_with_text]])
+                final_clip_name = f"Task 1 Feedback clips/Task1_Final_Clip_{index}.mp4"
+                final_clip.write_videofile(final_clip_name)
+
+        directory = 'Task 1 Feedback clips'
+        mp4_files = [f for f in os.listdir(directory) if f.endswith('.mp4')]
+        print(f"Task 1 Number of actual combined clips: {len(mp4_files)}")
 
 
 if __name__ == "__main__":
-    analysis = Task1PerformanceAnalyzer('Demo_Reference_Seg1.csv', 'Demo_user_Seg1.csv', 'Atallah.mp4',
-                                        'Youssef.mp4')
-    aligned_data_var = analysis.align_data()
-    analysis.normalize_and_process_windows()
-    analysis.process_videos()
+    analysis1 = Task1PerformanceAnalyzer('Demo_Reference_Seg1.csv', 'Demo_user_Seg1.csv', 'Youssef.mp4',
+                                        'Atallah.mp4')
+    aligned_data_var1 = analysis1.align_data()
+    analysis1.normalize_and_process_windows()
+    analysis1.process_videos()
+
+    analysis2 = Task2PerformanceAnalyzer('Demo_Reference_Seg2.csv', 'Demo_user_Seg2.csv', 'Youssef.mp4',
+                                         'Atallah.mp4')
+    aligned_data_var2 = analysis2.align_data()
+    analysis2.normalize_and_process_windows()
+    analysis2.process_videos()
+
+    analysis3 = Task3PerformanceAnalyzer('Demo_Reference_Seg3.csv', 'Demo_user_Seg3.csv', 'Youssef.mp4',
+                                         'Atallah.mp4')
+    aligned_data_var3 = analysis3.align_data()
+    analysis3.normalize_and_process_windows()
+    analysis3.process_videos()
