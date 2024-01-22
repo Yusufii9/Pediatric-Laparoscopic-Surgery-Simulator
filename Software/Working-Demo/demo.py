@@ -239,6 +239,7 @@ class Application(tk.Tk):
         self.add_button('Feedback', self.show_feedback_popup, (self.screen_height/3 + 250))
         self.add_button('Examination', self.task_menu, (self.screen_height/3 + 200))
         self.add_button('Training', self.task_menu, (self.screen_height/3 + 150))
+        self.back_button = self.add_back_button('Back', self.test_train_window)
 
 
 
@@ -263,6 +264,7 @@ class Application(tk.Tk):
         #self.canvas.itemconfig(self.welcome_shadow, text='Login Menu', font=('MS Sans Serif', 80))
         self.add_button('Guest User', self.test_train_window, (self.screen_height/3 + 200))
         self.add_button('Login/Register', self.login_window, (self.screen_height/3 + 150))
+        self.back_button = self.add_back_button('Back', self.test_train_window)
 
     def on_user_logged_in(self):
         # Code to run when user is logged in
@@ -641,7 +643,7 @@ class GUI(object):
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.displayHeight)
 
         # Use this when using direct show setting, otherwise it slows down the startup
-        self.cap.set(cv2.CAP_PROP_FPS, 15)
+        self.cap.set(cv2.CAP_PROP_FPS, 13)
         print(self.cap.get(cv2.CAP_PROP_FPS))
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
 
