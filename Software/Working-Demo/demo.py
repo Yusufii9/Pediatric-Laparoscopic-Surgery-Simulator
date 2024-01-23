@@ -709,7 +709,7 @@ class GUI(object):
             '''
             def start_sensors(self):
                 try:
-                    self.ser = serial.Serial('COM6', 9600)   # COM port may change depending on computer/devices being used
+                    self.ser = serial.Serial('COM6', 31250)   # COM port may change depending on computer/devices being used
                     self.ser.flushInput()
 
                 except serial.SerialException:
