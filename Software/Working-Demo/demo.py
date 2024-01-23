@@ -1160,7 +1160,29 @@ class GUI(object):
                     # Create/Open the OpenCV window
                     cv2.namedWindow(self.windowName)
 
-                    self.out = cv2.VideoWriter('outpy.avi', cv2.VideoWriter_fourcc(*'MJPG'), 15, (self.displayWidth, self.displayHeight))
+                    try:
+                        user_folder = os.path.join('UserData', self.current_user)
+                        user_file_count_file = os.path.join(user_folder, 'file_count.txt')
+
+                        # Read the current file count
+                        with open(user_file_count_file, 'r') as count_file:
+                            file_count = int(count_file.read())
+                    except FileNotFoundError:
+                        if not os.path.exists(user_folder):
+                            os.makedirs(user_folder)
+
+                        file_count = 0
+
+                    # Create a unique filename for the video
+                    video_filename = os.path.join(user_folder, f"{self.current_user}_video_{file_count}.avi")
+
+                    with open(user_file_count_file, 'w') as count_file:
+                        count_file.write(str(file_count))
+
+                    # Create and return the VideoWriter object
+                    self.out = cv2.VideoWriter(video_filename, cv2.VideoWriter_fourcc(*'MJPG'), 15, (self.displayWidth, self.displayHeight))
+
+                    #self.out = cv2.VideoWriter('outpy.avi', cv2.VideoWriter_fourcc(*'MJPG'), 15, (self.displayWidth, self.displayHeight))
                     self.startup_counter -= 1
 
                     while self.startup_counter >= 0:
@@ -1206,7 +1228,6 @@ class GUI(object):
                         filename = os.path.join(user_folder, f"{self.current_user}_sensor_data_{file_count}.txt")
                         if not os.path.exists(filename):
                             break
-                        file_count += 1
 
                     # Increment the file count and save it back to the file
                     file_count += 1
