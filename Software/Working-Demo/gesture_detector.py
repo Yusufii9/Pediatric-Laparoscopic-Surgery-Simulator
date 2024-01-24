@@ -32,13 +32,35 @@ class GestureDetector:
         return detections
 
     def process_video(self):
+        # Open the video file for initial frame count
         cap = cv2.VideoCapture(self.video_path)
         if not cap.isOpened():
             print("Error opening video file")
             return
 
         fps = cap.get(cv2.CAP_PROP_FPS)
-        max_frame_number = 100  # Adjust this as needed
+
+        # Manually count frames
+        frame_count = 0
+        while True:
+            ret, _ = cap.read()
+            if not ret:
+                break
+            frame_count += 1
+
+        cap.release()  # Release the video capture object after counting frames
+
+        if frame_count == 0:
+            print("No frames found in the video")
+            return
+
+        print(f"Video opened with FPS: {fps}, Total Frames: {frame_count}")
+
+        # Re-open the video file for processing
+        cap = cv2.VideoCapture(self.video_path)
+        if not cap.isOpened():
+            print("Error reopening video file")
+            return
 
         current_gestures = {'RG': None, 'LG': None}
         start_time = {'RG': None, 'LG': None}
@@ -47,19 +69,18 @@ class GestureDetector:
             writer = csv.writer(file)
             writer.writerow(['Time Start', 'Time Stop', 'Right Gesture', 'Left Gesture'])
 
-            frame_number = 0
-            while cap.isOpened() and frame_number <= max_frame_number:
+            for frame_number in range(frame_count):
                 ret, frame = cap.read()
-                if ret:
-                    input_tensor = tf.convert_to_tensor([np.asarray(frame)], dtype=tf.float32)
-                    detections = self.detect_fn(input_tensor)
-                    self.process_detections(detections, writer, frame_number, fps, current_gestures, start_time)
-                    frame_number += 1
-                else:
-                    print("End of video reached or no more frames to read.")
+                if not ret:
+                    print(f"End of video reached prematurely at frame {frame_number}.")
                     break
 
-            self.record_last_gestures(writer, frame_number, fps, current_gestures, start_time)
+                print(f"Processing frame {frame_number + 1}/{frame_count}")
+                input_tensor = tf.convert_to_tensor([np.asarray(frame)], dtype=tf.float32)
+                detections = self.detect_fn(input_tensor)
+                self.process_detections(detections, writer, frame_number, fps, current_gestures, start_time)
+
+            self.record_last_gestures(writer, frame_count, fps, current_gestures, start_time)
 
         cap.release()
         cv2.destroyAllWindows()
@@ -97,13 +118,15 @@ class GestureDetector:
             if current_gestures[side]:
                 writer.writerow([start_time[side], end_time, current_gestures['RG'], current_gestures['LG']])
 
-# Example usage
-gesture_detector = GestureDetector(
-    model_name='my_ssd_mobnet',
-    video_path='/Users/esraa/Gesture Reconigtion/Atallah.avi',
-    labelmap_path='/Users/esraa/Gesture Reconigtion/annotations/label_map.pbtxt',
-    pipeline_config_path='/Users/esraa/Gesture Reconigtion/my_ssd_mobnet/export/pipeline.config',
-    checkpoint_path='/Users/esraa/Gesture Reconigtion/my_ssd_mobnet',
-    csv_path='/Users/esraa/Gesture Reconigtion/output.csv'
-)
-gesture_detector.process_video()
+
+if __name__ == "__main__":
+    # Example usage
+    gesture_detector = GestureDetector(
+        model_name='my_ssd_mobnet',
+        video_path='/Users/esraa/Gesture Reconigtion/Atallah.avi',
+        labelmap_path='/Users/esraa/Gesture Reconigtion/annotations/label_map.pbtxt',
+        pipeline_config_path='/Users/esraa/Gesture Reconigtion/my_ssd_mobnet/export/pipeline.config',
+        checkpoint_path='/Users/esraa/Gesture Reconigtion/my_ssd_mobnet',
+        csv_path='/Users/esraa/Gesture Reconigtion/output.csv'
+    )
+    gesture_detector.process_video()
