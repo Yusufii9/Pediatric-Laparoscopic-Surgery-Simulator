@@ -15,7 +15,6 @@ import threading
 #from matplotlib.widgets import Slider, CheckButtons
 from cleaning_sensor_data import SensorDataCleaner
 from seg_data_to_subtasks import DataSegmentation
-from task1_written_feedback import check_signals_in_column
 from user_task1_evaluation_Testing import Task1PerformanceAnalyzer
 from user_task2_evaluation_Testing import Task2PerformanceAnalyzer
 from user_task3_evaluation_Testing import Task3PerformanceAnalyzer
@@ -26,6 +25,7 @@ from video_feedback_task1_Testing import Task1VideoPlayFeedback
 from video_feedback_task2 import Task2VideoPlayFeedback
 from video_feedback_task3 import Task3VideoPlayFeedback
 from video_playback import VideoPlayerApp
+from task1_written_feedback import check_signals_in_column
 import warnings
 
 
@@ -38,7 +38,8 @@ if not os.path.exists("Task 1 Feedback clips") and not os.path.exists("Task 2 Fe
     os.mkdir("Task 3 Feedback clips")
     print("Folders Created")
 else:
-    messagebox.showwarning(title="Warning", message="Folders Already Exist!")
+    # messagebox.showwarning(title="Warning", message="Folders Already Exist!")
+    pass
 
 
 class Application(tk.Tk):
@@ -709,7 +710,7 @@ class GUI(object):
             '''
             def start_sensors(self):
                 try:
-                    self.ser = serial.Serial('COM6', 31250)   # COM port may change depending on computer/devices being used
+                    self.ser = serial.Serial('COM3', 31250)   # COM port may change depending on computer/devices being used
                     self.ser.flushInput()
 
                 except serial.SerialException:
@@ -1171,7 +1172,7 @@ class GUI(object):
                         if not os.path.exists(user_folder):
                             os.makedirs(user_folder)
 
-                        file_count = 0
+                        file_count = 1
 
                     # Create a unique filename for the video
                     video_filename = os.path.join(user_folder, f"{self.current_user}_video_{file_count}.avi")
@@ -1222,7 +1223,7 @@ class GUI(object):
                     except FileNotFoundError:
                         user_folder = os.path.join('UserData', self.current_user)
                         user_file_count_file = os.path.join(user_folder, 'file_count.txt')
-                        file_count = 0
+                        file_count = 1
 
                     while True:
                         filename = os.path.join(user_folder, f"{self.current_user}_sensor_data_{file_count}.txt")
@@ -1343,7 +1344,6 @@ class GUI(object):
                     self.on_GUI_close()
                 show_popup()
                 quit_program(self)
-
 
 
 # Run the application
