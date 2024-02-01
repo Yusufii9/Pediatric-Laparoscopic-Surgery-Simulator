@@ -161,12 +161,6 @@ class Application(tk.Tk):
             font=('MS Sans Serif', 20), fill='black', tags=("overlay",)
         )
 
-        if (self.current_user != None):
-            self.canvas.create_text(
-                800, 300,
-                text="Welcome "+str(self.current_user),
-                font=('MS Sans Serif', 18), fill='white', tags=("overlay",)
-            )
 
     def raise_buttons_and_text(self):
         # Assuming all your buttons and text have a common tag like "overlay"
@@ -243,7 +237,7 @@ class Application(tk.Tk):
         self.add_button('Feedback', self.show_feedback_popup, (self.screen_height/3 + 250))
         self.add_button('Examination', self.task_menu, (self.screen_height/3 + 200))
         self.add_button('Training', self.task_menu, (self.screen_height/3 + 150))
-        self.back_button = self.add_back_button('Back', self.test_train_window)
+        self.back_button = self.add_back_button('Back', self.user_window)
 
 
 
@@ -268,7 +262,7 @@ class Application(tk.Tk):
         #self.canvas.itemconfig(self.welcome_shadow, text='Login Menu', font=('MS Sans Serif', 80))
         self.add_button('Guest User', self.test_train_window, (self.screen_height/3 + 200))
         self.add_button('Login/Register', self.login_window, (self.screen_height/3 + 150))
-        self.back_button = self.add_back_button('Back', self.test_train_window)
+        self.back_button = self.add_back_button('Back', self.start_menu)
 
     def on_user_logged_in(self):
         # Code to run when user is logged in
@@ -1221,7 +1215,7 @@ class GUI(object):
 
                         # Add countdown timer text to the image copy
                         countdown_text = str(self.startup_counter)
-                        cv2.putText(image_with_text, countdown_text, (self.displayWidth - 200, self.displayHeight - 100), self.font, 1, (0, 0, 0))
+                        cv2.putText(image_with_text, countdown_text, (self.displayWidth - 200, self.displayHeight - 150), self.font, 1, (0, 0, 0))
 
                         # Display the updated image
                         cv2.imshow(self.windowName, image_with_text)
