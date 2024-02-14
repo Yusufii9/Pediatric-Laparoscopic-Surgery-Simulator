@@ -9,12 +9,12 @@ This repository for SYSC4907 Capstone Engineering Project "Pediatric Laparoscopi
 2. Esraa Alaa Aldeen
 3. Huda Sheikh
 4. Youssef Megahed
-- **Date Created:** Septmber 14, 2023
-- **Last Edited:** 
+- **Date Created:** September 14, 2023
+- **Last Edited:** February 14, 2024 
 
 ## Description
 
-This project is a simulation software designed for pediatric laparoscopic surgery training. The code simulates various surgical tasks such as ring and suturing tasks. It captures video input, processes the data, and provides real-time feedback based on sensor data. 
+This project is a simulation software designed for pediatric laparoscopic surgery training. The code simulates various surgical tasks, such as ring and suturing tasks. It captures video input, processes the data, and provides real-time feedback based on sensor data. 
 
 ## How to Use
 
