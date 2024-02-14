@@ -1,10 +1,10 @@
 # Pediatric Laparoscopic Surgery Simulator
 
-This repository contains the code for a Pediatric Laparoscopic Surgery Simulator, developed as a SYSC4907 Capstone Engineering Project.
+This repository for SYSC4907 Capstone Engineering Project "Pediatric Laparoscopic Surgery Simulator" at Carleton University (Fall 2023/Winter 2024)
 
 ## Project Details
 
-- **Author:** 
+- **Authors:** 
 1. Atallah Madi
 2. Esraa Alaa Aldeen
 3. Huda Sheikh
